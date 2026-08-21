@@ -1,13 +1,13 @@
 {
   "decade": "1980s",
-  "environment": "school-related interior or exterior",
-  "photo_character": "authentic 1980s photographic language",
-  "wardrobe": "period-appropriate school or youth clothing",
-  "color_science": "consistent archival cinematic tone",
-  "texture": "era-appropriate film or digital texture",
-  "constraints": [
-    "same identity",
-    "no text inside image",
-    "clean top safe-zone"
-  ]
+  "environment": "late-Soviet school interior with polished floors, wooden classroom furniture, glass display cases, restrained festive September details",
+  "wardrobe": "authentic 1980s Soviet school clothing; formal but slightly softer and more individual than the 1970s",
+  "hair_and_grooming": "natural late-1980s grooming, age-appropriate volume, no contemporary salon styling",
+  "camera": "35mm color negative film, 45-55mm equivalent, direct family-documentary viewpoint",
+  "photo_character": "recognizable late-Soviet personal archive photography, sincere and unstaged",
+  "color_science": "slightly warmer color print, gentle cyan-green shadows, subdued saturation, soft contrast",
+  "texture": "fine-to-medium grain, modest lab-print softness, occasional subtle flash falloff without heavy artifacts",
+  "lighting": "window daylight or small on-camera flash balanced with ambient school light",
+  "composition": "simple centered portrait or candid school moment, upper 12 percent visually quiet",
+  "constraints": ["same identity", "no 1990s fashion", "no modern devices", "no fake typography", "no nostalgic kitsch", "clean top safe-zone"]
 }

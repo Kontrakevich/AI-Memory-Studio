@@ -1,13 +1,13 @@
 {
   "decade": "2000s",
-  "environment": "school-related interior or exterior",
-  "photo_character": "authentic 2000s photographic language",
-  "wardrobe": "period-appropriate school or youth clothing",
-  "color_science": "consistent archival cinematic tone",
-  "texture": "era-appropriate film or digital texture",
-  "constraints": [
-    "same identity",
-    "no text inside image",
-    "clean top safe-zone"
-  ]
+  "environment": "Russian school interior in the early digital era: practical renovation, laminated surfaces, brighter painted walls, computer-era details kept secondary",
+  "wardrobe": "authentic early-2000s school clothing with restrained casual influence, simple shirts, sweaters, jackets and practical footwear",
+  "hair_and_grooming": "period-appropriate early-2000s grooming, clean but not contemporary premium styling",
+  "camera": "early compact digital camera, roughly 35-50mm equivalent, small-sensor depth and direct JPEG rendering",
+  "photo_character": "family digital archive image from an early consumer camera",
+  "color_science": "cleaner than film but with early-digital white-balance imperfections, modest highlight clipping and slightly cool neutrals",
+  "texture": "moderate digital sharpening, subtle small-sensor noise, compressed JPEG-like microcontrast without visible artifacts",
+  "lighting": "mixed fluorescent interior light and window daylight, occasional compact-camera flash",
+  "composition": "simple snapshot framing, believable school context, upper 12 percent visually quiet",
+  "constraints": ["same identity", "no smartphone photography", "no modern cinematic HDR", "no 2010s fashion", "no fake text", "clean top safe-zone"]
 }

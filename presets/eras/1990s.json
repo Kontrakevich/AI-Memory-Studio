@@ -1,13 +1,13 @@
 {
   "decade": "1990s",
-  "environment": "school-related interior or exterior",
-  "photo_character": "authentic 1990s photographic language",
-  "wardrobe": "period-appropriate school or youth clothing",
-  "color_science": "consistent archival cinematic tone",
-  "texture": "era-appropriate film or digital texture",
-  "constraints": [
-    "same identity",
-    "no text inside image",
-    "clean top safe-zone"
-  ]
+  "environment": "post-Soviet school corridor or classroom with mixed old furniture, practical renovations, bulletin boards and everyday lived-in detail",
+  "wardrobe": "authentic 1990s school-age clothing: practical jackets, knitwear, shirts, trousers or skirts; modest imported influences without fashion caricature",
+  "hair_and_grooming": "natural 1990s grooming, slightly less formal, no modern fade cuts or contemporary styling",
+  "camera": "consumer 35mm compact camera, 35-50mm equivalent, occasional direct flash",
+  "photo_character": "ordinary family snapshot with imperfect but believable framing",
+  "color_science": "slightly faded print, cool-green fluorescent influence, stronger flash highlights, mild magenta or cyan lab bias",
+  "texture": "consumer-film grain, modest sharpness, slight print softness, no fake scratches",
+  "lighting": "mixed fluorescent school light, overcast window light or direct compact-camera flash",
+  "composition": "casual candid framing with believable personal archive energy, upper 12 percent visually quiet",
+  "constraints": ["same identity", "no 2000s digital look", "no luxury styling", "no modern smartphones", "no fake text", "clean top safe-zone"]
 }

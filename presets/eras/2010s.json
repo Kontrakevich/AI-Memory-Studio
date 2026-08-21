@@ -1,13 +1,13 @@
 {
   "decade": "2010s",
-  "environment": "school-related interior or exterior",
-  "photo_character": "authentic 2010s photographic language",
-  "wardrobe": "period-appropriate school or youth clothing",
-  "color_science": "consistent archival cinematic tone",
-  "texture": "era-appropriate film or digital texture",
-  "constraints": [
-    "same identity",
-    "no text inside image",
-    "clean top safe-zone"
-  ]
+  "environment": "modernized Russian school interior with cleaner finishes, brighter classrooms, contemporary signage kept soft and unreadable",
+  "wardrobe": "2010s school or smart-casual clothing, cleaner silhouettes, restrained contemporary styling without trend-heavy fashion",
+  "hair_and_grooming": "natural 2010s grooming, tidy and contemporary for the period",
+  "camera": "DSLR or good mirrorless camera, 50mm-equivalent portrait perspective, moderate shallow depth of field",
+  "photo_character": "clean digital lifestyle-documentary photography, polished but still believable as a personal archive",
+  "color_science": "neutral-to-warm skin tones, balanced white point, controlled contrast, subtle cinematic grading",
+  "texture": "clean digital detail, low noise, natural skin texture, restrained sharpening",
+  "lighting": "soft window light with controlled ambient interior fill",
+  "composition": "more intentional framing and depth than earlier decades, upper 12 percent visually quiet",
+  "constraints": ["same identity", "no 2020s smartphone HDR", "no influencer styling", "no fake text", "no excessive bokeh", "clean top safe-zone"]
 }

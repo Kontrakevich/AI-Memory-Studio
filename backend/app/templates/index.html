@@ -10,24 +10,34 @@
   <div class="page">
     <header class="hero">
       <div>
+        <div class="eyebrow">MARINS · 1 SEPTEMBER</div>
         <h1>{{ title }}</h1>
-        <p>Пакетная подготовка школьных AI-фото по десятилетиям, карточек и видео.</p>
+        <p>Две фотографии → identity passport → эпохи 1970–2020 → единая верстка → meeting anchor → Seedance 2.0.</p>
       </div>
-      <button class="secondary" onclick="loadProjects()">Обновить список</button>
+      <div class="header-actions">
+        <button class="secondary" onclick="loadHealth()">API статус</button>
+        <button class="secondary" onclick="loadProjects()">Обновить</button>
+      </div>
     </header>
+
+    <section class="card compact">
+      <div id="health" class="health-row">Проверка API...</div>
+    </section>
 
     <section class="grid two">
       <div class="card">
-        <h2>Новый проект</h2>
+        <h2>Новый человек</h2>
         <form id="project-form">
           <label>Название проекта<input name="project_name" value="1 сентября 2026" required /></label>
-          <label>Фамилия<input name="surname" required /></label>
-          <label>Имя<input name="name" required /></label>
+          <div class="grid two tight">
+            <label>Фамилия<input name="surname" required /></label>
+            <label>Имя<input name="name" required /></label>
+          </div>
           <label>Должность<input name="position" required /></label>
           <label>Годы обучения<input name="school_years" placeholder="1993–2003" required /></label>
-          <label>Описание / notes<textarea name="notes" rows="3"></textarea></label>
-          <label>Фото ребёнка<input type="file" name="child_file" accept="image/*" required /></label>
-          <label>Фото взрослого<input type="file" name="adult_file" accept="image/*" required /></label>
+          <label>Дополнительное описание<textarea name="notes" rows="3" placeholder="Особенности образа, пожелания по эпохе"></textarea></label>
+          <label>Школьное фото<input type="file" name="child_file" accept="image/*" required /></label>
+          <label>Актуальное фото<input type="file" name="adult_file" accept="image/*" required /></label>
           <button type="submit">Создать проект</button>
         </form>
         <div id="create-status" class="status"></div>
@@ -35,35 +45,36 @@
 
       <div class="card">
         <h2>Проекты</h2>
+        <p class="hint">Нажми на проект, чтобы выбрать его для генерации.</p>
         <div id="projects" class="project-list"></div>
       </div>
     </section>
 
     <section class="card">
-      <h2>Запуск генерации</h2>
+      <h2>Production pipeline</h2>
       <div class="grid two">
-        <label>ID проекта<input id="gen-project-id" /></label>
-        <label>Image provider
+        <label>ID проекта<input id="gen-project-id" placeholder="Выбери проект справа" /></label>
+        <label>Генератор master-фото
           <select id="image-provider">
-            <option value="nano_banana">nano_banana</option>
-            <option value="flux">flux</option>
-            <option value="openrouter">openrouter</option>
+            <option value="seedream" selected>Seedream / Ark — production path</option>
+            <option value="nano_banana">Nano Banana / OpenRouter — identity-first</option>
           </select>
         </label>
-        <label>Video provider
+        <label>Видео
           <select id="video-provider">
-            <option value="seedance">seedance</option>
-            <option value="kling">kling</option>
+            <option value="seedance" selected>Seedance 2.0 / Ark</option>
           </select>
         </label>
         <label>Десятилетия
           <input id="decades" value="1970s,1980s,1990s,2000s,2010s,2020s" />
         </label>
       </div>
-      <div class="actions">
-        <button onclick="startGeneration()">Старт</button>
+      <div class="actions-row">
+        <button onclick="startGeneration()">Запустить весь pipeline</button>
+        <button class="secondary" onclick="refreshSelectedProject()">Статус проекта</button>
+        <button class="secondary" onclick="refreshVideoStatus()">Проверить Seedance / MP4</button>
       </div>
-      <pre id="generation-output"></pre>
+      <pre id="generation-output">Готов к запуску.</pre>
     </section>
   </div>
   <script src="/static/app.js"></script>

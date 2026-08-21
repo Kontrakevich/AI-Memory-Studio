@@ -1,4 +1,3 @@
-import asyncio
 import base64
 import json
 from datetime import datetime, timezone
@@ -225,7 +224,6 @@ async def run_project_pipeline(
                     state.setdefault("assets", {}).setdefault("cards", {})[decade] = card_path
                     _save_state(project_id, state)
             except Exception:
-                # Continue other decades; diagnostics already contain the error.
                 continue
 
         anchor = await generate_meeting_anchor(project_id, passport) if create_video else None
@@ -245,12 +243,24 @@ async def run_project_pipeline(
                 _task(state, "video", "seedance", "submitted", external_task_id=task_id)
                 _diag(state, "info", "Seedance task submitted", {"task_id": task_id})
             else:
-                _diag(state, "error", "Seedance submission failed", {"response": video_result.get("data")})
+                error_payload = video_result.get("data") or video_result.get("error")
+                _task(state, "video", "seedance", "failed", error=str(error_payload))
+                _diag(state, "error", "Seedance submission failed", {"response": error_payload})
+            _save_state(project_id, state)
+        elif create_video:
+            state = _load_state(project_id)
+            _task(state, "video", "seedance", "failed", error="No public meeting anchor URL")
+            _diag(state, "error", "Seedance not submitted: no public meeting anchor URL")
             _save_state(project_id, state)
 
         state = _load_state(project_id)
         failed = [t for t in state.get("tasks", []) if t.get("status") == "failed"]
-        state["status"] = "partial" if failed else ("video_submitted" if create_video else "completed")
+        if failed:
+            state["status"] = "partial"
+        elif create_video and state.get("assets", {}).get("video", {}).get("external_task_id"):
+            state["status"] = "video_submitted"
+        else:
+            state["status"] = "completed"
         _diag(state, "info", "Production pipeline finished", {"failed_tasks": len(failed)})
         _save_state(project_id, state)
     except Exception as exc:

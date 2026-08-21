@@ -7,7 +7,7 @@ from ..settings import settings
 
 def _headers() -> dict:
     return {
-        "Authorization": f"Bearer {settings.seedance_api_key}",
+        "Authorization": f"Bearer {settings.ark_key}",
         "Content-Type": "application/json",
     }
 
@@ -23,8 +23,8 @@ async def submit_video_job(
     watermark: bool = False,
 ) -> dict:
     """Submit a Seedance 2.0 task to the official Volcengine Ark API."""
-    if not settings.seedance_api_key:
-        return {"ok": False, "error": "SEEDANCE_API_KEY is empty"}
+    if not settings.ark_key:
+        return {"ok": False, "error": "ARK_API_KEY (or legacy SEEDANCE_API_KEY) is empty"}
 
     content = [{"type": "text", "text": prompt}]
     for url in reference_urls or []:
@@ -53,13 +53,13 @@ async def submit_video_job(
             "ok": response.is_success,
             "status_code": response.status_code,
             "data": _json_or_text(response),
-            "request": _redacted_request(payload),
+            "request": payload,
         }
 
 
 async def get_video_job(task_id: str) -> dict:
-    if not settings.seedance_api_key:
-        return {"ok": False, "error": "SEEDANCE_API_KEY is empty"}
+    if not settings.ark_key:
+        return {"ok": False, "error": "ARK_API_KEY (or legacy SEEDANCE_API_KEY) is empty"}
     url = f"{settings.seedance_base_url.rstrip('/')}/contents/generations/tasks/{task_id}"
     async with httpx.AsyncClient(timeout=120) as client:
         response = await client.get(url, headers=_headers())
@@ -67,17 +67,12 @@ async def get_video_job(task_id: str) -> dict:
 
 
 async def delete_video_job(task_id: str) -> dict:
-    if not settings.seedance_api_key:
-        return {"ok": False, "error": "SEEDANCE_API_KEY is empty"}
+    if not settings.ark_key:
+        return {"ok": False, "error": "ARK_API_KEY (or legacy SEEDANCE_API_KEY) is empty"}
     url = f"{settings.seedance_base_url.rstrip('/')}/contents/generations/tasks/{task_id}"
     async with httpx.AsyncClient(timeout=120) as client:
         response = await client.delete(url, headers=_headers())
         return {"ok": response.is_success, "status_code": response.status_code, "data": _json_or_text(response)}
-
-
-def _redacted_request(payload: dict) -> dict:
-    # Safe for diagnostics: no credentials are included in the request body.
-    return payload
 
 
 def _json_or_text(response: httpx.Response):

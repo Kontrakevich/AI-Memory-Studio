@@ -1,13 +1,13 @@
 {
   "decade": "2020s",
-  "environment": "school-related interior or exterior",
-  "photo_character": "authentic 2020s photographic language",
-  "wardrobe": "period-appropriate school or youth clothing",
-  "color_science": "consistent archival cinematic tone",
-  "texture": "era-appropriate film or digital texture",
-  "constraints": [
-    "same identity",
-    "no text inside image",
-    "clean top safe-zone"
-  ]
+  "environment": "contemporary Russian school or education space with clean architecture, modern materials and minimal visual clutter",
+  "wardrobe": "current smart-casual or school-appropriate clothing, refined and natural rather than fashion-editorial",
+  "hair_and_grooming": "current natural grooming, realistic skin and hair detail",
+  "camera": "modern full-frame mirrorless or high-end smartphone-equivalent perspective, natural 35-50mm look",
+  "photo_character": "premium contemporary documentary portrait with restrained cinematic polish",
+  "color_science": "neutral skin, controlled dynamic range, soft warm highlights, cool-neutral shadows, no overprocessed HDR",
+  "texture": "high micro-detail with natural pores and fabric texture, clean optics, subtle lens character",
+  "lighting": "soft directional daylight with architectural ambient fill",
+  "composition": "cinematic but credible, controlled negative space and upper 12 percent visually quiet",
+  "constraints": ["same identity", "no beauty-filter skin", "no AI plasticity", "no exaggerated cinematic haze", "no fake text", "clean top safe-zone"]
 }

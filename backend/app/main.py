@@ -1,12 +1,15 @@
 import json
 from pathlib import Path
-from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException
+
+from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from .services.settings import settings
+
+from .services.generation_service import refresh_video_status, run_project_pipeline
 from .services.models import PersonMeta, ProjectCreate, TaskRequest
-from .services.project_service import create_project, list_projects, get_project, start_generation
+from .services.project_service import create_project, get_project, list_projects
+from .services.settings import settings
 from .services.storage import ensure_roots
 
 
@@ -24,7 +27,16 @@ async def index(request: Request):
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "app": settings.app_title}
+    return {
+        "ok": True,
+        "app": settings.app_title,
+        "providers": {
+            "openrouter": bool(settings.openrouter_api_key),
+            "ark": bool(settings.ark_key),
+            "seedream_model": settings.seedream_model,
+            "seedance_model": settings.seedance_model,
+        },
+    }
 
 
 @app.get("/api/projects")
@@ -36,8 +48,8 @@ async def api_list_projects():
 async def api_get_project(project_id: str):
     try:
         return get_project(project_id)
-    except Exception as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @app.post("/api/projects")
@@ -54,9 +66,44 @@ async def api_create_project(
 
 
 @app.post("/api/generate")
-async def api_generate(req: TaskRequest):
-    state = start_generation(req)
-    return JSONResponse(state)
+async def api_generate(req: TaskRequest, background_tasks: BackgroundTasks):
+    try:
+        state = get_project(req.project_id)
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    provider = req.image_provider or settings.default_image_provider
+    state["status"] = "queued"
+    state["requested_pipeline"] = {
+        "decades": req.decades,
+        "image_provider": provider,
+        "video_provider": req.video_provider or settings.default_video_provider,
+        "render_cards": req.render_cards,
+        "create_video": req.create_video,
+    }
+    # BackgroundTasks runs inside the local FastAPI process after this response.
+    background_tasks.add_task(
+        run_project_pipeline,
+        req.project_id,
+        req.decades,
+        provider,
+        req.create_video,
+        req.render_cards,
+    )
+    return {
+        "ok": True,
+        "project_id": req.project_id,
+        "status": "queued",
+        "message": "Production pipeline queued in the local server process",
+    }
+
+
+@app.get("/api/video/{project_id}/status")
+async def api_video_status(project_id: str):
+    try:
+        return await refresh_video_status(project_id)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @app.get("/api/diagnostics/{project_id}")

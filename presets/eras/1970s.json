@@ -1,13 +1,13 @@
 {
   "decade": "1970s",
-  "environment": "school-related interior or exterior",
-  "photo_character": "authentic 1970s photographic language",
-  "wardrobe": "period-appropriate school or youth clothing",
-  "color_science": "consistent archival cinematic tone",
-  "texture": "era-appropriate film or digital texture",
-  "constraints": [
-    "same identity",
-    "no text inside image",
-    "clean top safe-zone"
-  ]
+  "environment": "late-Soviet school corridor or classroom with varnished wood, painted walls, simple notice boards, restrained institutional order",
+  "wardrobe": "period-authentic Soviet school clothing; neat, formal, modest, no costume exaggeration",
+  "hair_and_grooming": "natural 1970s grooming appropriate to age; conservative silhouettes",
+  "camera": "35mm Soviet or European consumer film camera, approximately 45-55mm equivalent, eye-level documentary portrait",
+  "photo_character": "family archive photograph rather than modern retro cosplay",
+  "color_science": "muted warm print, restrained reds and browns, slightly lowered saturation, soft highlight roll-off",
+  "texture": "fine analog grain, subtle paper-print softness, mild edge falloff, no artificial damage overlays",
+  "lighting": "window daylight mixed with warm interior practical light",
+  "composition": "calm frontal or three-quarter portrait, human-scale school context, upper 12 percent visually quiet",
+  "constraints": ["same identity", "period accuracy", "no modern objects", "no fake text", "no propaganda emphasis", "no sepia cliché", "clean top safe-zone"]
 }

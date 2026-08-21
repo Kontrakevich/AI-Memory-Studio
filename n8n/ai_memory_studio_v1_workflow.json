@@ -1,0 +1,43 @@
+{
+  "name": "AI Memory Studio V1",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "ai-memory-studio-start",
+        "httpMethod": "POST",
+        "responseMode": "lastNode"
+      },
+      "id": "Webhook_Start",
+      "name": "Webhook Start",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [260, 320]
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:8011/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json}}"
+      },
+      "id": "HTTP_Generate",
+      "name": "HTTP Generate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [540, 320]
+    }
+  ],
+  "connections": {
+    "Webhook Start": {
+      "main": [
+        [
+          {
+            "node": "HTTP Generate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

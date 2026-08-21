@@ -1,0 +1,15 @@
+services:
+  ai-memory-studio:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: ai-memory-studio
+    env_file:
+      - .env
+    ports:
+      - "8011:8011"
+    volumes:
+      - ./backend/app/data:/app/app/data
+      - ./presets:/app/presets
+      - ./prompts:/app/prompts
+    restart: unless-stopped

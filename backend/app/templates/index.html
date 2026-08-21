@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <div>
+        <h1>{{ title }}</h1>
+        <p>Пакетная подготовка школьных AI-фото по десятилетиям, карточек и видео.</p>
+      </div>
+      <button class="secondary" onclick="loadProjects()">Обновить список</button>
+    </header>
+
+    <section class="grid two">
+      <div class="card">
+        <h2>Новый проект</h2>
+        <form id="project-form">
+          <label>Название проекта<input name="project_name" value="1 сентября 2026" required /></label>
+          <label>Фамилия<input name="surname" required /></label>
+          <label>Имя<input name="name" required /></label>
+          <label>Должность<input name="position" required /></label>
+          <label>Годы обучения<input name="school_years" placeholder="1993–2003" required /></label>
+          <label>Описание / notes<textarea name="notes" rows="3"></textarea></label>
+          <label>Фото ребёнка<input type="file" name="child_file" accept="image/*" required /></label>
+          <label>Фото взрослого<input type="file" name="adult_file" accept="image/*" required /></label>
+          <button type="submit">Создать проект</button>
+        </form>
+        <div id="create-status" class="status"></div>
+      </div>
+
+      <div class="card">
+        <h2>Проекты</h2>
+        <div id="projects" class="project-list"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Запуск генерации</h2>
+      <div class="grid two">
+        <label>ID проекта<input id="gen-project-id" /></label>
+        <label>Image provider
+          <select id="image-provider">
+            <option value="nano_banana">nano_banana</option>
+            <option value="flux">flux</option>
+            <option value="openrouter">openrouter</option>
+          </select>
+        </label>
+        <label>Video provider
+          <select id="video-provider">
+            <option value="seedance">seedance</option>
+            <option value="kling">kling</option>
+          </select>
+        </label>
+        <label>Десятилетия
+          <input id="decades" value="1970s,1980s,1990s,2000s,2010s,2020s" />
+        </label>
+      </div>
+      <div class="actions">
+        <button onclick="startGeneration()">Старт</button>
+      </div>
+      <pre id="generation-output"></pre>
+    </section>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

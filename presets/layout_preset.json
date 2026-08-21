@@ -1,0 +1,17 @@
+{
+  "name": "marins_archive_topbar",
+  "format": "16:9",
+  "canvas": "3840x2160",
+  "overlay": {
+    "position": "top",
+    "height_percent": 12,
+    "background": "#003050",
+    "text_primary": "#FFFFFF",
+    "text_secondary": "#D9E4EC"
+  },
+  "typography": {
+    "surname_font": "Garant Pro",
+    "meta_font": "Mont",
+    "style": "premium archival"
+  }
+}

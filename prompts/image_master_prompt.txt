@@ -1,0 +1,7 @@
+Use the two provided photos as identity references for the same person.
+Create a highly realistic school-era portrait for the target decade.
+Preserve facial identity. Do not create a different person.
+Keep a premium archival cinematic tone.
+Adapt wardrobe, hairstyle, environment, and photo texture to the decade.
+Do not render text inside image.
+Leave a clean upper safe-zone for the future overlay.

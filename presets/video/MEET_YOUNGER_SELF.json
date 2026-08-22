@@ -1,0 +1,15 @@
+{
+  "id": "MEET_YOUNGER_SELF",
+  "title": "Meet Younger Self",
+  "purpose": "Alternative preset with both ages established earlier in the scene.",
+  "duration_seconds": 8,
+  "structure": [
+    "0-2s: establish school environment and younger self",
+    "2-5s: reveal adult self in the same space",
+    "5-8s: eye contact and restrained emotional finish"
+  ],
+  "camera": {"movement": "gentle reveal or lateral drift", "framing": "medium-wide"},
+  "motion_rules": ["no fantasy portal", "no dissolve morph", "no age blending", "stable anatomy"],
+  "look": "cinematic realism with archival emotional tone",
+  "final_beat": "recognition without melodrama"
+}

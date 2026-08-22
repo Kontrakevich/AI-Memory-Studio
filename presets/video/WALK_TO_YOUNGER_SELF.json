@@ -1,0 +1,29 @@
+{
+  "id": "WALK_TO_YOUNGER_SELF",
+  "title": "Walk to Younger Self",
+  "purpose": "Primary production preset for September 1 memory films.",
+  "duration_seconds": 10,
+  "structure": [
+    "0-2s: school-age version already exists naturally in the school environment",
+    "2-6s: adult present-day version enters frame and approaches slowly",
+    "6-8s: mutual recognition, brief eye contact, restrained warm reaction",
+    "8-10s: subtle stop or half-step closer, emotional final hold"
+  ],
+  "camera": {
+    "movement": "subtle cinematic dolly or very slow handheld drift",
+    "framing": "medium-wide to medium",
+    "lens_language": "natural 35-50mm full-frame equivalent",
+    "rules": ["no aggressive orbit", "no fast zoom", "no whip pan", "no face crop"]
+  },
+  "motion_rules": [
+    "preserve both identities independently",
+    "adult and child must remain distinct ages",
+    "no morph between bodies",
+    "no duplicated limbs",
+    "no sudden character teleportation",
+    "natural walking cadence",
+    "minimal facial exaggeration"
+  ],
+  "look": "premium cinematic realism, restrained nostalgia, authentic school memory, soft September daylight",
+  "final_beat": "recognition and quiet emotional connection rather than hug by default"
+}

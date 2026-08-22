@@ -12,7 +12,7 @@
       <div>
         <div class="eyebrow">MARINS · 1 SEPTEMBER</div>
         <h1>{{ title }}</h1>
-        <p>Две фотографии → identity passport → эпохи 1970–2020 → единая верстка → meeting anchor → Seedance 2.0.</p>
+        <p>Две фотографии → identity passport → эпохи 1970–2020 → единая верстка → meeting anchor → видео «встреча с собой».</p>
       </div>
       <div class="header-actions">
         <button class="secondary" onclick="loadHealth()">API статус</button>
@@ -60,19 +60,22 @@
             <option value="nano_banana">Nano Banana / OpenRouter — identity-first</option>
           </select>
         </label>
-        <label>Видео
-          <select id="video-provider">
-            <option value="seedance" selected>Seedance 2.0 / Ark</option>
+        <label>Видео-сценарий
+          <select id="video-preset">
+            <option value="WALK_TO_YOUNGER_SELF" selected>Walk to Younger Self — основной</option>
+            <option value="CHILDHOOD_CONVERSATION">Childhood Conversation — спокойный</option>
+            <option value="MEET_YOUNGER_SELF">Meet Younger Self — короткий reveal</option>
           </select>
         </label>
         <label>Десятилетия
           <input id="decades" value="1970s,1980s,1990s,2000s,2010s,2020s" />
         </label>
       </div>
+      <p class="hint">Основной preset: ребёнок уже находится в школьной сцене → взрослая версия входит и подходит → узнавание → финальный эмоциональный hold.</p>
       <div class="actions-row">
-        <button onclick="startGeneration()">Запустить весь pipeline</button>
+        <button onclick="startGeneration()">Запустить фото + видео</button>
         <button class="secondary" onclick="refreshSelectedProject()">Статус проекта</button>
-        <button class="secondary" onclick="refreshVideoStatus()">Проверить Seedance / MP4</button>
+        <button class="secondary" onclick="refreshVideoStatus()">Проверить видео / MP4</button>
       </div>
       <pre id="generation-output">Готов к запуску.</pre>
     </section>

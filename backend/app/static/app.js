@@ -24,6 +24,7 @@ async function loadProjects() {
     el.className = 'project-item';
     const stillCount = Object.keys(item.assets?.stills || {}).filter(k => k !== 'meeting_anchor').length;
     const videoStatus = item.assets?.video?.status || '—';
+    const videoPreset = item.assets?.video?.preset || item.video_preset || '—';
     el.innerHTML = `
       <div class="project-title">${item.person?.surname || ''} ${item.person?.name || ''}</div>
       <small>${item.person?.position || ''}</small><br>
@@ -33,6 +34,7 @@ async function loadProjects() {
         <span>${stillCount}/6 эпох</span>
         <span>video: ${videoStatus}</span>
       </div>
+      <small>preset: ${videoPreset}</small><br>
       <small class="project-id">${item.id}</small>
     `;
     el.onclick = () => {
@@ -85,11 +87,12 @@ async function startGeneration() {
     project_id: projectId,
     decades: document.getElementById('decades').value.split(',').map(x => x.trim()).filter(Boolean),
     image_provider: document.getElementById('image-provider').value,
-    video_provider: document.getElementById('video-provider').value,
+    video_provider: 'seedance',
+    video_preset: document.getElementById('video-preset').value,
     render_cards: true,
     create_video: true
   };
-  out.textContent = 'Ставлю production pipeline в очередь...';
+  out.textContent = `Ставлю production pipeline в очередь: ${payload.video_preset}...`;
   const res = await fetch('/api/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -108,6 +111,7 @@ async function refreshSelectedProject() {
   document.getElementById('generation-output').textContent = JSON.stringify({
     id: data.id,
     status: data.status,
+    video_preset: data.video_preset || data.requested_pipeline?.video_preset || null,
     stills: data.assets?.stills || {},
     cards: data.assets?.cards || {},
     video: data.assets?.video || null,

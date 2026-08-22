@@ -22,6 +22,7 @@ class TaskRequest(BaseModel):
     decades: List[str] = Field(default_factory=lambda: ["1970s", "1980s", "1990s", "2000s", "2010s", "2020s"])
     image_provider: Optional[str] = None
     video_provider: Optional[str] = None
+    video_preset: str = "WALK_TO_YOUNGER_SELF"
     render_cards: bool = True
     create_video: bool = True
 

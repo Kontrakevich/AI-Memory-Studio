@@ -36,6 +36,7 @@ async def health():
             "seedream_model": settings.seedream_model,
             "seedance_model": settings.seedance_model,
         },
+        "video_presets": ["WALK_TO_YOUNGER_SELF", "CHILDHOOD_CONVERSATION", "MEET_YOUNGER_SELF"],
     }
 
 
@@ -78,10 +79,10 @@ async def api_generate(req: TaskRequest, background_tasks: BackgroundTasks):
         "decades": req.decades,
         "image_provider": provider,
         "video_provider": req.video_provider or settings.default_video_provider,
+        "video_preset": req.video_preset,
         "render_cards": req.render_cards,
         "create_video": req.create_video,
     }
-    # BackgroundTasks runs inside the local FastAPI process after this response.
     background_tasks.add_task(
         run_project_pipeline,
         req.project_id,
@@ -89,11 +90,13 @@ async def api_generate(req: TaskRequest, background_tasks: BackgroundTasks):
         provider,
         req.create_video,
         req.render_cards,
+        req.video_preset,
     )
     return {
         "ok": True,
         "project_id": req.project_id,
         "status": "queued",
+        "video_preset": req.video_preset,
         "message": "Production pipeline queued in the local server process",
     }
 

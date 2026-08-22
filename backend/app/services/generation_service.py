@@ -30,9 +30,7 @@ def _save_state(project_id: str, state: dict[str, Any]) -> None:
 
 
 def _diag(state: dict, level: str, message: str, payload: dict | None = None) -> None:
-    state.setdefault("diagnostics", []).append(
-        {"ts": _now(), "level": level, "message": message, "payload": payload or {}}
-    )
+    state.setdefault("diagnostics", []).append({"ts": _now(), "level": level, "message": message, "payload": payload or {}})
 
 
 def _task(state: dict, task_type: str, provider: str, status: str, **extra) -> dict:
@@ -74,7 +72,6 @@ and explicit constraints for preserving identity across age transformations.
 Schema: {\"stable_features\": {...}, \"identity_constraints\": [...], \"confidence_notes\": [...]}."""
     refs = [state["assets"]["child_image"], state["assets"]["adult_image"]]
     result = await openrouter.analyze_images(prompt, refs)
-    passport: dict[str, Any]
     if result.get("ok"):
         raw = _extract_openrouter_text(result).strip()
         try:
@@ -119,13 +116,7 @@ def _save_openrouter_b64(api_payload: dict, output: Path) -> None:
     output.write_bytes(base64.b64decode(raw))
 
 
-async def generate_still(
-    project_id: str,
-    label: str,
-    prompt: str,
-    provider: str,
-    reference_paths: list[str],
-) -> dict:
+async def generate_still(project_id: str, label: str, prompt: str, provider: str, reference_paths: list[str]) -> dict:
     state = _load_state(project_id)
     output = project_dir(project_id) / "epochs" / f"{project_id}_{label}_clean.png"
     record = _task(state, "image", provider, "running", label=label)
@@ -153,11 +144,7 @@ async def generate_still(
         state = _load_state(project_id)
         record = next((t for t in state.get("tasks", []) if t["id"] == record["id"]), record)
         record.update({"status": "succeeded", "updated_at": _now(), "output": str(output)})
-        state.setdefault("assets", {}).setdefault("stills", {})[label] = {
-            "path": str(output),
-            "provider": provider,
-            **provider_asset,
-        }
+        state.setdefault("assets", {}).setdefault("stills", {})[label] = {"path": str(output), "provider": provider, **provider_asset}
         _diag(state, "info", f"Image generated: {label}", {"provider": provider})
         _save_state(project_id, state)
         return state["assets"]["stills"][label]
@@ -172,7 +159,6 @@ async def generate_still(
 
 
 async def generate_meeting_anchor(project_id: str, passport: dict | None) -> dict | None:
-    """Generate the video anchor with Seedream so Seedance gets a public reference URL."""
     if not settings.ark_key:
         state = _load_state(project_id)
         _diag(state, "warning", "Meeting anchor skipped: ARK_API_KEY is empty")
@@ -183,13 +169,15 @@ async def generate_meeting_anchor(project_id: str, passport: dict | None) -> dic
     person = state["person"]
     prompt = f"""Create one photorealistic cinematic 16:9 master keyframe for a September 1st memory film.
 Use both supplied photographs as references of the SAME PERSON at two ages.
-Show the school-age version on the left or midground and the current adult version approaching from the right.
-They clearly share the same identity, but their ages remain distinct and natural.
+The school-age version is already naturally present in the school environment, positioned left or midground.
+The current adult version is entering or approaching from the right with enough physical separation for natural walking animation.
+Both faces must be clearly visible and recognisable as the same identity at different ages; ages must remain distinct.
 Authentic Russian school environment appropriate to the person's school years ({person['school_years']}).
 Warm early-September daylight, restrained nostalgia, documentary credibility, premium cinematic photography.
-No text, no logos, no fantasy morph, no duplicated limbs, no exaggerated emotion.
-Leave the upper 12% visually quiet for a later deterministic caption overlay.
-The frame must be immediately usable as an image-to-video first frame."""
+Natural body proportions, clear floor contact, believable depth and walking path.
+No text, no logos, no fantasy portal, no morph, no duplicated limbs, no exaggerated emotion.
+Leave the upper 12% visually quiet for later deterministic caption overlay.
+The frame must be immediately usable as the first frame for WALK_TO_YOUNGER_SELF image-to-video animation."""
     prompt = _with_identity(prompt, passport)
     refs = [state["assets"]["child_image"], state["assets"]["adult_image"]]
     return await generate_still(project_id, "meeting_anchor", prompt, "seedream", refs)
@@ -201,11 +189,13 @@ async def run_project_pipeline(
     image_provider: str,
     create_video: bool = True,
     render_cards: bool = True,
+    video_preset: str = "WALK_TO_YOUNGER_SELF",
 ) -> None:
     state = _load_state(project_id)
     state["status"] = "processing"
     state["tasks"] = []
-    _diag(state, "info", "Production pipeline started", {"image_provider": image_provider, "decades": decades})
+    state["video_preset"] = video_preset
+    _diag(state, "info", "Production pipeline started", {"image_provider": image_provider, "decades": decades, "video_preset": video_preset})
     _save_state(project_id, state)
 
     try:
@@ -230,26 +220,27 @@ async def run_project_pipeline(
 
         if create_video and anchor and anchor.get("url"):
             state = _load_state(project_id)
-            video_prompt = build_video_prompt(state)
+            video_prompt = build_video_prompt(state, video_preset)
             video_result = await seedance.submit_video_job(video_prompt, [anchor["url"]])
             if video_result.get("ok"):
                 task_id = video_result["data"].get("id")
                 state.setdefault("assets", {})["video"] = {
                     "provider": "seedance",
+                    "preset": video_preset,
                     "external_task_id": task_id,
                     "status": "submitted",
                     "reference_url": anchor["url"],
                 }
-                _task(state, "video", "seedance", "submitted", external_task_id=task_id)
-                _diag(state, "info", "Seedance task submitted", {"task_id": task_id})
+                _task(state, "video", "seedance", "submitted", external_task_id=task_id, preset=video_preset)
+                _diag(state, "info", "Seedance task submitted", {"task_id": task_id, "preset": video_preset})
             else:
                 error_payload = video_result.get("data") or video_result.get("error")
-                _task(state, "video", "seedance", "failed", error=str(error_payload))
+                _task(state, "video", "seedance", "failed", error=str(error_payload), preset=video_preset)
                 _diag(state, "error", "Seedance submission failed", {"response": error_payload})
             _save_state(project_id, state)
         elif create_video:
             state = _load_state(project_id)
-            _task(state, "video", "seedance", "failed", error="No public meeting anchor URL")
+            _task(state, "video", "seedance", "failed", error="No public meeting anchor URL", preset=video_preset)
             _diag(state, "error", "Seedance not submitted: no public meeting anchor URL")
             _save_state(project_id, state)
 

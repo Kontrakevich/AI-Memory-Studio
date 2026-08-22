@@ -1,0 +1,15 @@
+{
+  "id": "CHILDHOOD_CONVERSATION",
+  "title": "Childhood Conversation",
+  "purpose": "Backup preset for a quieter dialogue-like meeting.",
+  "duration_seconds": 10,
+  "structure": [
+    "0-3s: both ages share the frame with natural spatial separation",
+    "3-7s: subtle turn toward each other, small facial reaction, optional short gesture",
+    "7-10s: quiet shared look and final hold"
+  ],
+  "camera": {"movement": "mostly locked with subtle push-in", "framing": "medium two-shot"},
+  "motion_rules": ["no lip-sync unless explicitly requested", "no morphing", "no embrace by default", "stable identity"],
+  "look": "documentary school memory, warm but restrained",
+  "final_beat": "silent recognition"
+}

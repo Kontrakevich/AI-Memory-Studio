@@ -1,0 +1,36 @@
+PORTRAIT NORMALIZATION — CHILD / ADULT
+
+Create a photorealistic normalized identity portrait from the provided source photograph.
+
+PRIMARY GOAL:
+Preserve the exact real facial identity, age, hairstyle, facial proportions, skin texture and distinctive visible features of the person in the source image.
+
+OUTPUT:
+- clean chest-up portrait
+- neutral camera angle, eye level
+- face looking directly toward camera
+- neutral, relaxed expression
+- soft even studio-style light
+- simple neutral background
+- natural skin texture
+- no beautification
+- no age change
+- no hairstyle change
+- no face reshaping
+- no clothing redesign unless explicitly specified
+
+IDENTITY PRIORITY:
+The source photograph is the absolute identity reference.
+Do not reinterpret the face.
+Do not make the person more symmetrical.
+Do not modernize or stylize facial features.
+Do not infer traits not visible in the source.
+
+For CHILD mode:
+Preserve the exact childhood age and youthful proportions from the source photograph.
+
+For ADULT mode:
+Preserve the exact present-day adult age and facial structure from the source photograph.
+
+NEGATIVE:
+no face morphing, no identity drift, no beautification, no age progression, no age regression, no plastic skin, no stylized portrait, no cartoon, no CGI look, no text, no watermark.

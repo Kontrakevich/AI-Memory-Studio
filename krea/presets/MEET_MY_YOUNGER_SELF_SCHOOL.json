@@ -1,6 +1,6 @@
 {
   "id": "MEET_MY_YOUNGER_SELF_SCHOOL",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "title": "Meet My Younger Self — School",
   "target": "Krea + Seedance 2.0",
   "format": {
@@ -10,16 +10,16 @@
   },
   "inputs": [
     {
-      "id": "child_photo",
-      "label": "Child identity reference",
+      "id": "child_source_photo",
+      "label": "Child source photo",
       "required": true,
-      "role": "strict identity, age, face, hairstyle, child wardrobe reference"
+      "role": "raw childhood identity source"
     },
     {
-      "id": "adult_photo",
-      "label": "Adult identity reference",
+      "id": "adult_source_photo",
+      "label": "Adult source photo",
       "required": true,
-      "role": "strict identity, age, face, hairstyle, adult wardrobe reference"
+      "role": "raw present-day identity source"
     },
     {
       "id": "storyboard",
@@ -35,10 +35,51 @@
       "role": "environment, props, photographic language"
     }
   ],
+  "preprocess": {
+    "child": {
+      "step_1": {
+        "name": "Generate normalized child portrait",
+        "input": "child_source_photo",
+        "prompt": "krea/prompts/portrait_normalization.txt",
+        "mode": "CHILD",
+        "output": "child_normalized_portrait",
+        "approval_required": true
+      },
+      "step_2": {
+        "name": "Generate child character card",
+        "primary_input": "child_normalized_portrait",
+        "secondary_input": "child_source_photo",
+        "prompt": "krea/prompts/character_card_generation.txt",
+        "mode": "CHILD",
+        "output": "child_character_card",
+        "approval_required": true
+      }
+    },
+    "adult": {
+      "step_1": {
+        "name": "Generate normalized adult portrait",
+        "input": "adult_source_photo",
+        "prompt": "krea/prompts/portrait_normalization.txt",
+        "mode": "ADULT",
+        "output": "adult_normalized_portrait",
+        "approval_required": true
+      },
+      "step_2": {
+        "name": "Generate adult character card",
+        "primary_input": "adult_normalized_portrait",
+        "secondary_input": "adult_source_photo",
+        "prompt": "krea/prompts/character_card_generation.txt",
+        "mode": "ADULT",
+        "output": "adult_character_card",
+        "approval_required": true
+      }
+    }
+  },
   "reference_hierarchy": [
-    "child_photo defines child identity",
-    "adult_photo defines adult identity",
-    "character sheets define wardrobe and accessories",
+    "child_source_photo is the absolute source of truth for child identity",
+    "adult_source_photo is the absolute source of truth for adult identity",
+    "approved normalized portraits standardize face presentation without changing identity",
+    "approved character cards define reusable face angles, wardrobe, body silhouette and accessories",
     "storyboard defines action and composition only"
   ],
   "character_rules": {
@@ -130,8 +171,17 @@
     "no text, subtitles, logos or watermark"
   ],
   "pipeline": [
-    "identity references",
-    "character sheets",
+    "child source photo",
+    "generate normalized child portrait",
+    "approve child portrait",
+    "generate child character card",
+    "approve child character card",
+    "adult source photo",
+    "generate normalized adult portrait",
+    "approve adult portrait",
+    "generate adult character card",
+    "approve adult character card",
+    "combine approved child + adult assets",
     "meeting anchor still",
     "Seedance 2.0 motion pass",
     "final 9:16 video"

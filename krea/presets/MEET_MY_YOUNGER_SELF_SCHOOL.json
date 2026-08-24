@@ -1,0 +1,139 @@
+{
+  "id": "MEET_MY_YOUNGER_SELF_SCHOOL",
+  "version": "1.0.0",
+  "title": "Meet My Younger Self — School",
+  "target": "Krea + Seedance 2.0",
+  "format": {
+    "aspect_ratio": "9:16",
+    "duration_seconds": 10,
+    "shot_type": "single_continuous_shot"
+  },
+  "inputs": [
+    {
+      "id": "child_photo",
+      "label": "Child identity reference",
+      "required": true,
+      "role": "strict identity, age, face, hairstyle, child wardrobe reference"
+    },
+    {
+      "id": "adult_photo",
+      "label": "Adult identity reference",
+      "required": true,
+      "role": "strict identity, age, face, hairstyle, adult wardrobe reference"
+    },
+    {
+      "id": "storyboard",
+      "label": "3x2 storyboard",
+      "required": true,
+      "role": "action, blocking, adult entrance from screen-right, interaction sequence only"
+    },
+    {
+      "id": "era",
+      "label": "School era",
+      "required": true,
+      "default": "1990s",
+      "role": "environment, props, photographic language"
+    }
+  ],
+  "reference_hierarchy": [
+    "child_photo defines child identity",
+    "adult_photo defines adult identity",
+    "character sheets define wardrobe and accessories",
+    "storyboard defines action and composition only"
+  ],
+  "character_rules": {
+    "child": {
+      "age": 12,
+      "wardrobe": "mustard/ochre knitted sweater with dark Nordic deer/tree pattern, blue collared shirt, dark trousers, black school shoes",
+      "accessory": "vintage brown leather rectangular school briefcase with short top handle and metal clasp"
+    },
+    "adult": {
+      "age": 40,
+      "wardrobe": "dark charcoal or graphite tailored blazer, dark shirt or polo, dark trousers, restrained contemporary footwear",
+      "accessory": "the same type of vintage brown leather rectangular school briefcase as the child, matching proportions, handle and clasp"
+    }
+  },
+  "story_beats": [
+    {
+      "beat": 1,
+      "time": "0-2s",
+      "action": "Child stands alone in classroom, facing camera, holding briefcase; calm, slightly serious expression."
+    },
+    {
+      "beat": 2,
+      "time": "2-3s",
+      "action": "Child senses someone on screen-right; eyes react first, then head and shoulders turn right; curiosity and mild surprise."
+    },
+    {
+      "beat": 3,
+      "time": "3-5s",
+      "action": "Adult physically enters from OFF-SCREEN RIGHT through the classroom doorway, walking toward the child, carrying the matching briefcase; warm recognition begins."
+    },
+    {
+      "beat": 4,
+      "time": "5-7s",
+      "action": "Adult reaches child, places one arm around shoulders and affectionately ruffles the child’s hair with the free hand; child relaxes and smiles."
+    },
+    {
+      "beat": 5,
+      "time": "7-9s",
+      "action": "They turn together toward camera; adult keeps arm around child; both smile naturally; both briefcases remain visible."
+    },
+    {
+      "beat": 6,
+      "time": "9-10s",
+      "action": "Both slightly raise matching briefcases, exchange amused glance, gently tap the briefcases together, then look back to camera for final hold."
+    }
+  ],
+  "camera": {
+    "framing": "medium-full to full-body",
+    "height": "eye/chest level",
+    "movement": "almost static; optional very subtle push-in",
+    "blocking": "child center-left; reserve negative space on screen-right for adult entrance",
+    "forbidden": ["cuts", "orbit", "zoom", "aggressive dolly", "handheld shake", "cropped heads"]
+  },
+  "emotion_arc": [
+    "calm childhood seriousness",
+    "curiosity",
+    "mild surprise",
+    "recognition",
+    "warmth",
+    "affection",
+    "playful familiarity",
+    "quiet happiness"
+  ],
+  "visual_style": {
+    "look": "photorealistic premium documentary realism",
+    "light": "soft natural early-September daylight",
+    "color": "natural restrained warmth, no orange cast",
+    "environment": "authentic lived-in school classroom matching the era, not a museum set",
+    "texture": "subtle photographic texture, no glossy AI aesthetic"
+  },
+  "negative_constraints": [
+    "no face morphing",
+    "no identity blending",
+    "no age transformation",
+    "no duplicate child or adult",
+    "no third character",
+    "no teleportation or fade-in",
+    "no body fusion or body intersection",
+    "no extra limbs, hands or fingers",
+    "no malformed hands",
+    "no clothing changes",
+    "no disappearing blazer",
+    "no backpack, crossbody bag, laptop bag or modern business briefcase",
+    "no briefcase fusion or disappearance",
+    "no classroom transformation",
+    "no modern classroom displays",
+    "no crying or melodrama",
+    "no fantasy effects",
+    "no text, subtitles, logos or watermark"
+  ],
+  "pipeline": [
+    "identity references",
+    "character sheets",
+    "meeting anchor still",
+    "Seedance 2.0 motion pass",
+    "final 9:16 video"
+  ]
+}

@@ -1,0 +1,55 @@
+SEEDANCE 2.0 — MEET MY YOUNGER SELF / SCHOOL
+
+FORMAT
+Vertical 9:16, 10 seconds, one continuous shot, photorealistic live-action cinematic video. No cuts, no transitions, no morphing.
+
+REFERENCE LOGIC
+CHILD PHOTO = exact identity of Mikhail at age 12.
+ADULT PHOTO = exact identity of Mikhail at age 40.
+CHARACTER SHEETS = wardrobe and accessories.
+STORYBOARD = action, blocking and composition only.
+Never use simplified storyboard faces as identity references.
+
+CHARACTER A — MIKHAIL, AGE 12
+Strictly preserve the childhood reference. Slim 12-year-old boy, fair skin, green-grey eyes, straight narrow nose, thin lips, elongated youthful face, straight medium-brown hair with neat fringe. He remains clearly 12 throughout.
+Wardrobe: mustard/ochre knitted sweater with dark Nordic deer/tree pattern, blue collared shirt, dark trousers, black school shoes.
+Accessory: vintage brown leather rectangular school briefcase with short top handle and metal clasp.
+
+CHARACTER B — MIKHAIL, AGE 40
+Strictly preserve the adult references. Slim tall 40-year-old man, fair skin, green-grey eyes, elongated narrow facial structure, straight prominent nose, thin lips, defined jawline, short dark-brown hair, subtle natural stubble. He remains the present-day adult throughout.
+Wardrobe: dark charcoal/graphite tailored blazer, dark shirt or polo, dark trousers, restrained contemporary footwear. The blazer must remain visible and consistent.
+Accessory: the same type of vintage brown leather rectangular school briefcase as the boy, matching proportions, short handle and similar metal clasp. Never replace with backpack, crossbody bag, laptop bag or modern business bag.
+
+SCENE
+Authentic lived-in school classroom matching Mikhail's childhood era. Wooden desks and chairs, large chalkboard, simple light walls, period-correct floor, wall clock, subtle books and school objects, soft natural September daylight. Classroom doorway visible on screen-right/rear-right. No modern displays or contemporary classroom furniture.
+
+CAMERA / BLOCKING
+Vertical 9:16. Eye/chest-level camera. Medium-full to full-body framing. Child begins center-left. Reserve negative space on screen-right for the adult to enter. Camera almost stationary; only a very subtle push-in or natural breathing. No cuts, orbit, zoom, aggressive dolly or handheld shake. Never crop either head.
+
+ACTION — ONE CONTINUOUS SHOT
+0–2s: The 12-year-old Mikhail stands alone facing camera, naturally holding his brown leather school briefcase. Calm, slightly serious, natural expression, like a school photograph quietly coming alive.
+
+2–3s: The boy senses someone on his RIGHT. His eyes react first, then he turns his head toward screen-right, followed by a slight shoulder turn. Curiosity and mild surprise, no abrupt full-body spin.
+
+3–5s: The 40-year-old Mikhail physically WALKS INTO FRAME FROM OFF-SCREEN RIGHT through the classroom doorway. He does not appear, fade in, teleport or transform. He wears the dark blazer and carries the matching brown leather school briefcase. He approaches naturally. They establish eye contact. Adult recognition becomes a restrained warm smile; the child's surprise becomes recognition and warmth.
+
+5–7s: The adult reaches the boy and stops beside him. He is naturally taller. He gently places one arm around the boy's shoulders in a warm half-hug. With his free hand he affectionately ruffles the boy's hair. Contact is anatomically correct and physically natural; the hair reacts subtly. The boy's serious expression softens, he makes a slight head movement and smiles. He looks up at the adult; the adult looks down with affection and quiet amusement. Emotion: warmth, recognition, playful familiarity, no sadness or melodrama.
+
+7–9s: The adult lowers the ruffling hand while keeping the other arm naturally around the boy's shoulders. They turn together toward camera. Both look directly into camera and smile naturally. The boy is youthful and slightly amused; the adult is warm, confident and affectionate. Both matching brown leather school briefcases remain clearly visible.
+
+9–10s: Both slightly raise the matching briefcases, glance at them, exchange a quick amused look and gently TAP the two briefcases together like a subtle friendly fist-bump. The briefcases remain separate solid objects with correct handles, clasps and rectangular geometry. They immediately look back into camera and hold a warm final pose.
+
+PERFORMANCE
+Naturalistic acting only: realistic blinking, subtle eye movement, natural breathing, small facial reactions, realistic weight shifts, restrained smiles, believable eye contact. No exaggerated surprise, commercial acting or exaggerated happiness.
+
+IDENTITY / CONTINUITY — HIGHEST PRIORITY
+Identity is more important than cinematic embellishment. Age-12 Mikhail remains identical to the childhood reference. Age-40 Mikhail remains identical to adult references. Never average faces, rejuvenate adult, age child, swap hairstyles, clothing or accessories. Maintain exact identities, correct ages, body proportions, clothing, hair, briefcases, classroom geometry and lighting continuity.
+
+PHYSICAL REALISM
+Correct anatomy. Correct hands. Natural arm placement around shoulders. Natural hand-to-hair contact. No body intersection. No fused fingers. Two briefcases remain separate and solid. During briefcase tap: no merging, deformation or disappearance.
+
+VISUAL LANGUAGE
+Photorealistic premium documentary realism. Natural skin and hair, realistic fabric and leather, soft early-September daylight, restrained cinematic contrast, subtle photographic texture, natural colors, slight warmth without orange grading. Authentic nostalgia without artificial retro filter. It should feel like a real archival school memory coming alive, not AI fantasy.
+
+STRICT NEGATIVE CONSTRAINTS
+No face morphing, identity blending, face swapping, age transformation, identity drift, duplicate child, duplicate adult, third character, teleportation, fade-in, time portal, magical effects, fantasy particles, body fusion, intersecting bodies, extra limbs, extra hands, extra fingers, malformed hands, distorted faces, clothing changes, disappearing blazer, changing hairstyle, backpack, crossbody bag, laptop bag, modern business briefcase, disappearing briefcases, fused briefcases, classroom transformation, modern classroom technology, camera cuts, aggressive camera motion, zoom, orbit, crying, melodrama, exaggerated expressions, cartoon, CGI look, 3D-render look, plastic skin, text, subtitles, logos, watermark.

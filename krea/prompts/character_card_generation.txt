@@ -1,0 +1,44 @@
+CHARACTER CARD GENERATION — CHILD / ADULT
+
+Use the approved normalized portrait as the PRIMARY identity reference and the original source photograph(s) as secondary evidence.
+
+Create one clean production character card for video generation.
+
+CARD CONTENT:
+1. FACE — front view
+2. FACE — left or right profile
+3. FACE — three-quarter view
+4. FULL / THREE-QUARTER BODY SILHOUETTE
+5. OUTFIT breakdown
+6. ACCESSORY breakdown
+
+IDENTITY:
+Preserve the exact same facial identity, age, hairstyle, proportions and visible distinguishing features from the approved normalized portrait.
+Do not create a new interpretation of the person.
+
+CHILD CARD:
+- preserve exact childhood age
+- preserve period-correct clothing from the source / approved wardrobe specification
+- preserve school briefcase and school accessories
+- no modernized clothing unless explicitly requested
+
+ADULT CARD:
+- preserve exact current adult age
+- preserve approved contemporary wardrobe
+- preserve dark tailored blazer when specified
+- preserve the matching brown leather school briefcase when specified
+
+LAYOUT:
+clean neutral production reference sheet,
+plain light background,
+consistent scale,
+no decorative graphic design,
+no invented text inside image unless generated as a separate deterministic overlay,
+no cinematic background.
+
+ACCESSORY PRIORITY:
+Objects used later in the story must be shown clearly and separately.
+For the younger-self school preset, the brown leather rectangular school briefcase is a critical continuity object.
+
+NEGATIVE:
+no identity drift, no different face between angles, no age shift, no duplicate limbs, no wardrobe mutation, no missing accessories, no bag substitution, no stylization, no cartoon, no CGI look, no watermark.

@@ -1,0 +1,4 @@
+function svg(title:string,subtitle:string){return`<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1280"><rect width="720" height="1280" fill="#111827"/><text x="360" y="600" fill="#f3ece1" font-size="42" text-anchor="middle">${title}</text><text x="360" y="660" fill="#9aa8bd" font-size="26" text-anchor="middle">${subtitle}</text><text x="360" y="1180" fill="#c98f5a" font-size="20" text-anchor="middle">MOCK — NO OPENROUTER KEY</text></svg>`}
+export function mockImage(title:string,subtitle:string){return{bytes:new TextEncoder().encode(svg(title,subtitle)),contentType:"image/svg+xml"}}
+export function mockAnalysis(kind:string):Record<string,unknown>{return{mock:true,kind,note:"Mock analysis — configure OPENROUTER_API_KEY for live generation."}}
+export function mockQc(keys:string[],threshold:number){const scores:Record<string,number>={};for(const k of keys)scores[k]=.82;return{passed:true,scores,threshold,notes:"Mock QC",createdAt:new Date().toISOString()}}

@@ -1,0 +1,10 @@
+{
+  "name": "HUG Mobile — Встреться с собой",
+  "short_name": "HUG",
+  "description": "Загрузи два фото — и встреться с собой из прошлого.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#111827",
+  "theme_color": "#111827"
+}

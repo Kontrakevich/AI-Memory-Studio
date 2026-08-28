@@ -14,6 +14,9 @@ const approvalSchema = z.object({
   target: z.enum(["master", "meeting"]),
   approved: z.boolean(),
 });
+const openRouterSecretSchema = z.object({
+  apiKey: z.string().trim().min(20).max(512),
+});
 
 export const createHugJob = createServerFn({ method: "POST" })
   .validator((data: unknown) => createSchema.parse(data))
@@ -56,6 +59,40 @@ export const getHugDiagnostics = createServerFn({ method: "GET" })
     const { diagnosticsImpl } = await import("./hug/api.server");
     return diagnosticsImpl(data.jobId);
   });
+
+export const setHugOpenRouterSecret = createServerFn({ method: "POST" })
+  .validator((data: unknown) => openRouterSecretSchema.parse(data))
+  .handler(async ({ data }): Promise<{ connected: true }> => {
+    const { setCookie } = await import("@tanstack/react-start/server");
+    const { OPENROUTER_SESSION_COOKIE } = await import("./hug/config.server");
+
+    setCookie(OPENROUTER_SESSION_COOKIE, data.apiKey, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      path: "/",
+      maxAge: 60 * 60 * 12,
+    });
+
+    return { connected: true };
+  });
+
+export const clearHugOpenRouterSecret = createServerFn({ method: "POST" }).handler(
+  async (): Promise<{ connected: false }> => {
+    const { setCookie } = await import("@tanstack/react-start/server");
+    const { OPENROUTER_SESSION_COOKIE } = await import("./hug/config.server");
+
+    setCookie(OPENROUTER_SESSION_COOKIE, "", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      path: "/",
+      maxAge: 0,
+    });
+
+    return { connected: false };
+  },
+);
 
 export const getHugCapabilities = createServerFn({ method: "GET" }).handler(
   async (): Promise<Capabilities> => {

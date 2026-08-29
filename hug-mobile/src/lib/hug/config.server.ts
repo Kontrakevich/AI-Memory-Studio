@@ -1,6 +1,9 @@
 import { getCookie } from "@tanstack/react-start/server";
 
 export const OPENROUTER_SESSION_COOKIE = "__Host-hug_openrouter";
+export const SUPABASE_SESSION_COOKIE = "__Host-hug_supabase_service";
+export const DEFAULT_SUPABASE_URL =
+  "https://c--825ece70-e980-4526-a153-234fd8808d39-prod.lovable.cloud";
 
 export type HugConfig = {
   baseUrl: string;
@@ -11,6 +14,12 @@ export type HugConfig = {
   maxAttemptsPerStage: number;
   videoDurationSeconds: number;
   aspectRatio: string;
+};
+
+export type SupabaseServerConfig = {
+  url: string;
+  serviceRoleKey: string | null;
+  connected: boolean;
 };
 
 const env = (key: string) => {
@@ -45,5 +54,17 @@ export function getHugConfig(): HugConfig {
     maxAttemptsPerStage: num("HUG_MAX_ATTEMPTS", 2),
     videoDurationSeconds: num("HUG_VIDEO_SECONDS", 15),
     aspectRatio: env("HUG_ASPECT_RATIO") ?? "9:16",
+  };
+}
+
+export function getSupabaseServerConfig(): SupabaseServerConfig {
+  const url = env("SUPABASE_URL") ?? DEFAULT_SUPABASE_URL;
+  const serviceRoleKey =
+    env("SUPABASE_SERVICE_ROLE_KEY") ?? getCookie(SUPABASE_SESSION_COOKIE) ?? null;
+
+  return {
+    url,
+    serviceRoleKey,
+    connected: Boolean(url && serviceRoleKey),
   };
 }

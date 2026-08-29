@@ -1,21 +1,41 @@
 import { createClient } from "@supabase/supabase-js";
+import { getSupabaseServerConfig } from "@/lib/hug/config.server";
 
-function createSupabaseAdminClient() {
-  const url = process.env["SUPABASE_URL"];
-  const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
-  if (!url || !serviceRoleKey) {
-    throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
-  }
-  return createClient(url, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+function isNewSupabaseApiKey(value: string): boolean {
+  return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
 }
 
-let client: ReturnType<typeof createSupabaseAdminClient> | undefined;
+function createSupabaseFetch(supabaseKey: string): typeof fetch {
+  return (input, init) => {
+    const headers = new Headers(
+      typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
+    );
 
-export const supabaseAdmin = new Proxy({} as ReturnType<typeof createSupabaseAdminClient>, {
-  get(_, prop, receiver) {
-    if (!client) client = createSupabaseAdminClient();
-    return Reflect.get(client, prop, receiver);
-  },
-});
+    if (init?.headers) {
+      new Headers(init.headers).forEach((value, key) => headers.set(key, value));
+    }
+
+    if (isNewSupabaseApiKey(supabaseKey) && headers.get("Authorization") === `Bearer ${supabaseKey}`) {
+      headers.delete("Authorization");
+    }
+
+    headers.set("apikey", supabaseKey);
+    return fetch(input, { ...init, headers });
+  };
+}
+
+export function getSupabaseAdminClient() {
+  const { url, serviceRoleKey } = getSupabaseServerConfig();
+  if (!url || !serviceRoleKey) {
+    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY. Open Settings and connect Supabase.");
+  }
+
+  return createClient(url, serviceRoleKey, {
+    global: { fetch: createSupabaseFetch(serviceRoleKey) },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+}

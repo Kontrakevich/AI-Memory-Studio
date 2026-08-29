@@ -28,19 +28,40 @@ SCHOOL_IDENTITY + ADULT_IDENTITY
 ## Architecture
 
 ```text
+GitHub
+  → source of truth: code, prompts, config, versions
+
+Vercel
+  → TanStack Start UI + server runtime
+  → Vercel Blob private storage
+      → source photos
+      → generated frames/video
+      → job state JSON
+      → diagnostics JSON
+
 HUG Orchestrator
   → OpenRouterTransport
-    → AnalysisProvider
-    → NanoBananaProvider
-    → SeedanceProvider
-  → Supabase persistence + storage
-  → sanitized diagnostics
+      → AnalysisProvider
+      → NanoBananaProvider
+      → SeedanceProvider
 ```
 
-OpenRouter is the gateway only. Provider payloads remain separate.
+OpenRouter is the AI gateway only. Provider payloads remain separate.
 
 ## Security
-Never put `OPENROUTER_API_KEY` or `SUPABASE_SERVICE_ROLE_KEY` in browser code, Git, logs, diagnostics, or localStorage. Configure them only as server environment secrets.
+- Never put `OPENROUTER_API_KEY` in Git, diagnostics, or localStorage.
+- The optional per-browser OpenRouter key is stored only in an HttpOnly/Secure cookie for 12 hours.
+- Vercel Blob uses a server-side `BLOB_READ_WRITE_TOKEN` injected by Vercel when a Blob Store is connected to the project.
+- HUG assets are written with `access: private`.
+- Browser previews use short-lived presigned Blob URLs.
+
+## Vercel production setup
+1. Connect the GitHub repository to the Vercel project.
+2. Production branch: `hug-mobile`.
+3. Root Directory: `hug-mobile`.
+4. In **Vercel → hug-mobile → Storage**, create/connect one Blob Store.
+5. Vercel injects `BLOB_READ_WRITE_TOKEN` automatically.
+6. Deploy/redeploy the production branch.
 
 ## Local start
 
@@ -50,7 +71,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Apply `supabase/migrations/20260827_hug_mobile.sql` to the selected Supabase project first.
+Local persistence requires a Vercel Blob read/write token in `.env`.
 
 ## Current defaults
 - Analysis/QC: `google/gemini-2.5-flash`
@@ -64,3 +85,4 @@ Apply `supabase/migrations/20260827_hug_mobile.sql` to the selected Supabase pro
 - MEETING_REFERENCE_FRAME, SCHOOL_IDENTITY, ADULT_IDENTITY are video `input_references`.
 - Poll an existing video job; transient polling errors must never submit a second paid video job.
 - Retry only the failed pipeline layer.
+- No Supabase dependency is required.

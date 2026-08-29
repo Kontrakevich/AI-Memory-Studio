@@ -2,7 +2,7 @@ name: HUG Mobile CI
 
 on:
   push:
-    branches: [hug-mobile]
+    branches: [main, hug-mobile]
     paths:
       - 'hug-mobile/**'
       - '.github/workflows/hug-mobile-ci.yml'

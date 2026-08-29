@@ -9,5 +9,8 @@
 - Same real person at two ages, represented as two physically separate bodies.
 - No morphing, portals, teleporting, fantasy glow, identity blending, extra people, body fusion, camera redesign or aggressive zoom.
 - Approved MASTER_FIRST_FRAME defines the immutable camera/environment contract.
-- Git branch `hug-mobile` is the development branch for this mobile implementation.
-- API secrets remain server-side only.
+- GitHub branch `hug-mobile` is the canonical development/source branch for this mobile implementation.
+- Vercel runs the UI/server runtime.
+- Vercel Blob is the persistent store for private source photos, generated frames/video, job state, provider job IDs and sanitized diagnostics.
+- Supabase is not part of the HUG runtime architecture.
+- API and storage secrets remain server-side only; never write them to Git, localStorage or diagnostics.

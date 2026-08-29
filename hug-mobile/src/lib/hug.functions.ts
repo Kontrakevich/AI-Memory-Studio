@@ -17,9 +17,6 @@ const approvalSchema = z.object({
 const openRouterSecretSchema = z.object({
   apiKey: z.string().trim().min(20).max(512),
 });
-const supabaseSecretSchema = z.object({
-  serviceRoleKey: z.string().trim().min(20).max(2048),
-});
 
 export const createHugJob = createServerFn({ method: "POST" })
   .validator((data: unknown) => createSchema.parse(data))
@@ -86,40 +83,6 @@ export const clearHugOpenRouterSecret = createServerFn({ method: "POST" }).handl
     const { OPENROUTER_SESSION_COOKIE } = await import("./hug/config.server");
 
     setCookie(OPENROUTER_SESSION_COOKIE, "", {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-      path: "/",
-      maxAge: 0,
-    });
-
-    return { connected: false };
-  },
-);
-
-export const setHugSupabaseSecret = createServerFn({ method: "POST" })
-  .validator((data: unknown) => supabaseSecretSchema.parse(data))
-  .handler(async ({ data }): Promise<{ connected: true }> => {
-    const { setCookie } = await import("@tanstack/react-start/server");
-    const { SUPABASE_SESSION_COOKIE } = await import("./hug/config.server");
-
-    setCookie(SUPABASE_SESSION_COOKIE, data.serviceRoleKey, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-      path: "/",
-      maxAge: 60 * 60 * 12,
-    });
-
-    return { connected: true };
-  });
-
-export const clearHugSupabaseSecret = createServerFn({ method: "POST" }).handler(
-  async (): Promise<{ connected: false }> => {
-    const { setCookie } = await import("@tanstack/react-start/server");
-    const { SUPABASE_SESSION_COOKIE } = await import("./hug/config.server");
-
-    setCookie(SUPABASE_SESSION_COOKIE, "", {
       httpOnly: true,
       secure: true,
       sameSite: "strict",

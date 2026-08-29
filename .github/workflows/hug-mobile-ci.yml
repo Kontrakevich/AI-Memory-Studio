@@ -1,0 +1,29 @@
+name: HUG Mobile CI
+
+on:
+  push:
+    branches: [hug-mobile]
+    paths:
+      - 'hug-mobile/**'
+      - '.github/workflows/hug-mobile-ci.yml'
+  pull_request:
+    paths:
+      - 'hug-mobile/**'
+      - '.github/workflows/hug-mobile-ci.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hug-mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: hug-mobile/package.json
+      - run: npm install
+      - run: npm run typecheck
+      - run: npm run build

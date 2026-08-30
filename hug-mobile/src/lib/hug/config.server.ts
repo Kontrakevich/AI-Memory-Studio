@@ -23,8 +23,20 @@ const num = (key: string, fallback: number) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+export function normalizeOpenRouterKey(value: string | null | undefined) {
+  let key = value?.trim() ?? "";
+  key = key.replace(/^OPENROUTER_API_KEY\s*=\s*/i, "").trim();
+  key = key.replace(/^Bearer\s+/i, "").trim();
+  if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+    key = key.slice(1, -1).trim();
+  }
+  return key || null;
+}
+
 export function getHugConfig(): HugConfig {
-  const apiKey = env("OPENROUTER_API_KEY") ?? getCookie(OPENROUTER_SESSION_COOKIE) ?? null;
+  const apiKey = normalizeOpenRouterKey(
+    env("OPENROUTER_API_KEY") ?? getCookie(OPENROUTER_SESSION_COOKIE) ?? null,
+  );
 
   return {
     baseUrl: env("OPENROUTER_BASE_URL") ?? "https://openrouter.ai/api/v1",

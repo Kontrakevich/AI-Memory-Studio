@@ -37,16 +37,18 @@ function blobAuth(): BlobAuthOptions {
   const token = process.env["BLOB_READ_WRITE_TOKEN"];
   if (token) return { token };
 
-  const oidcToken = process.env["VERCEL_OIDC_TOKEN"];
   const storeId = process.env["BLOB_STORE_ID"];
-  if (oidcToken && storeId) return { oidcToken, storeId };
+  if (storeId) {
+    // On Vercel, @vercel/blob automatically receives and rotates VERCEL_OIDC_TOKEN
+    // at runtime. We only need to select the connected store here.
+    return { storeId };
+  }
 
   return {};
 }
 
 export function blobConfigured() {
-  const auth = blobAuth();
-  return Boolean(auth.token || (auth.oidcToken && auth.storeId));
+  return Boolean(process.env["BLOB_READ_WRITE_TOKEN"] || process.env["BLOB_STORE_ID"]);
 }
 
 async function readJson<T>(pathname: string): Promise<T | null> {

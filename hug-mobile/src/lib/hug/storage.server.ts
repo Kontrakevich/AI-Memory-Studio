@@ -22,17 +22,39 @@ export type StoredJob = {
   updated_at: string;
 };
 
+type BlobAuthOptions = {
+  token?: string;
+  oidcToken?: string;
+  storeId?: string;
+};
+
 const ROOT = "hug/jobs";
 const statePath = (jobId: string) => `${ROOT}/${jobId}/state.json`;
 const diagnosticsPath = (jobId: string) => `${ROOT}/${jobId}/diagnostics.json`;
 const assetPath = (jobId: string, name: string) => `${ROOT}/${jobId}/assets/${name}`;
 
+function blobAuth(): BlobAuthOptions {
+  const token = process.env["BLOB_READ_WRITE_TOKEN"];
+  if (token) return { token };
+
+  const oidcToken = process.env["VERCEL_OIDC_TOKEN"];
+  const storeId = process.env["BLOB_STORE_ID"];
+  if (oidcToken && storeId) return { oidcToken, storeId };
+
+  return {};
+}
+
 export function blobConfigured() {
-  return Boolean(process.env["BLOB_READ_WRITE_TOKEN"]);
+  const auth = blobAuth();
+  return Boolean(auth.token || (auth.oidcToken && auth.storeId));
 }
 
 async function readJson<T>(pathname: string): Promise<T | null> {
-  const result = await get(pathname, { access: "private", useCache: false });
+  const result = await get(pathname, {
+    access: "private",
+    useCache: false,
+    ...blobAuth(),
+  });
   if (!result || result.statusCode !== 200) return null;
   const text = await new Response(result.stream).text();
   return JSON.parse(text) as T;
@@ -45,6 +67,7 @@ async function writeJson(pathname: string, value: unknown) {
     addRandomSuffix: false,
     contentType: "application/json",
     cacheControlMaxAge: 0,
+    ...blobAuth(),
   });
 }
 
@@ -82,12 +105,17 @@ export async function uploadAsset(jobId: string, name: string, bytes: Uint8Array
     addRandomSuffix: false,
     contentType,
     multipart: bytes.byteLength > 4 * 1024 * 1024,
+    ...blobAuth(),
   });
   return blob.pathname;
 }
 
 export async function downloadDataUrl(pathname: string) {
-  const result = await get(pathname, { access: "private", useCache: false });
+  const result = await get(pathname, {
+    access: "private",
+    useCache: false,
+    ...blobAuth(),
+  });
   if (!result || result.statusCode !== 200) throw new Error(`Blob not found: ${pathname}`);
   const buffer = new Uint8Array(await new Response(result.stream).arrayBuffer());
   return `data:${result.blob.contentType || "application/octet-stream"};base64,${bytesToBase64(buffer)}`;
@@ -102,6 +130,7 @@ export async function signedUrlsForAssets(assets: Record<string, AssetRef>) {
     pathname: "*",
     operations: ["get"],
     validUntil: Date.now() + 15 * 60 * 1000,
+    ...blobAuth(),
   });
 
   for (const [key, asset] of entries) {

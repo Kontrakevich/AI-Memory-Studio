@@ -4,10 +4,20 @@ import type { Capabilities } from "./hug/api.server";
 import type { DiagnosticEvent, JobView } from "./hug/types";
 
 const jobIdSchema = z.object({ jobId: z.string().uuid() });
+const intakeAssetSchema = z.object({
+  path: z.string().min(24).max(512),
+  contentType: z.enum(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]),
+  size: z.number().int().positive().max(25 * 1024 * 1024),
+});
 const createSchema = z.object({
-  schoolImage: z.string().min(32),
-  adultImage: z.string().min(32),
+  schoolAsset: intakeAssetSchema,
+  adultAsset: intakeAssetSchema,
   testMode: z.boolean().default(false),
+});
+const inputUploadSchema = z.object({
+  slot: z.enum(["school", "adult"]),
+  contentType: z.enum(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]),
+  size: z.number().int().positive().max(25 * 1024 * 1024),
 });
 const approvalSchema = z.object({
   jobId: z.string().uuid(),
@@ -17,6 +27,18 @@ const approvalSchema = z.object({
 const openRouterSecretSchema = z.object({
   apiKey: z.string().trim().min(20).max(512),
 });
+
+export const createHugInputUpload = createServerFn({ method: "POST" })
+  .validator((data: unknown) => inputUploadSchema.parse(data))
+  .handler(async ({ data }): Promise<{
+    uploadUrl: string;
+    pathname: string;
+    contentType: "image/jpeg" | "image/png" | "image/webp" | "image/heic" | "image/heif";
+    maxSizeBytes: number;
+  }> => {
+    const { createInputUploadTicket } = await import("./hug/storage.server");
+    return createInputUploadTicket(data);
+  });
 
 export const createHugJob = createServerFn({ method: "POST" })
   .validator((data: unknown) => createSchema.parse(data))

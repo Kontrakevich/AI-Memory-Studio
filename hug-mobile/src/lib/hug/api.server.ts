@@ -1,60 +1,57 @@
 import { getHugConfig } from "./config.server";
-import { NanoBananaProvider, SeedanceProvider, base64ToBytes } from "./providers.server";
+import { NanoBananaProvider, SeedanceProvider } from "./providers.server";
 import { loadJob, logEvent, retryStage, runStage, toView } from "./orchestrator.server";
 import {
+  MAX_INPUT_BYTES,
   blobConfigured,
   createJobState,
   patchJobState,
   readDiagnostics,
-  uploadAsset,
   type StoredJob,
 } from "./storage.server";
 import { OpenRouterTransport } from "./transport.server";
 import type { DiagnosticEvent, JobView } from "./types";
 
-function decodeDataUrl(dataUrl: string) {
-  const match = /^data:([^;]+);base64,(.+)$/s.exec(dataUrl.trim());
-  if (!match) throw new Error("Ожидается изображение в формате data URL");
-  const contentType = match[1]!;
-  const bytes = base64ToBytes(match[2]!);
-  if (bytes.byteLength > 25 * 1024 * 1024) throw new Error("Изображение больше 25 МБ");
-  return { contentType, bytes };
-}
+type IntakeAsset = {
+  path: string;
+  contentType: string;
+  size: number;
+};
 
-function extension(contentType: string) {
-  if (contentType.includes("png")) return "png";
-  if (contentType.includes("webp")) return "webp";
-  if (contentType.includes("heic") || contentType.includes("heif")) return "heic";
-  return "jpg";
+function validateIntakeAsset(slot: "school" | "adult", asset: IntakeAsset) {
+  if (!asset.path.startsWith("hug/intake/")) {
+    throw new Error("Исходное фото не принадлежит защищённому хранилищу HUG.");
+  }
+  const expected = new RegExp(
+    `^hug/intake/[0-9a-f-]{36}/${slot}\\.(?:jpg|png|webp|heic)$`,
+    "i",
+  );
+  if (!expected.test(asset.path)) {
+    throw new Error(`Неверный путь исходника: ${slot}. Загрузите фото заново.`);
+  }
+  if (!asset.contentType.startsWith("image/")) {
+    throw new Error(`Файл ${slot} не распознан как изображение.`);
+  }
+  if (!Number.isFinite(asset.size) || asset.size <= 0 || asset.size > MAX_INPUT_BYTES) {
+    throw new Error(`Размер исходника ${slot} недопустим.`);
+  }
 }
 
 export async function createJobImpl(input: {
-  schoolImage: string;
-  adultImage: string;
+  schoolAsset: IntakeAsset;
+  adultAsset: IntakeAsset;
   testMode: boolean;
 }): Promise<JobView> {
   if (!blobConfigured()) {
     throw new Error("Vercel Blob не подключен к проекту. Добавь Blob Store в Vercel → hug-mobile → Storage.");
   }
 
+  validateIntakeAsset("school", input.schoolAsset);
+  validateIntakeAsset("adult", input.adultAsset);
+
   const config = getHugConfig();
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
-  const school = decodeDataUrl(input.schoolImage);
-  const adult = decodeDataUrl(input.adultImage);
-
-  const schoolPath = await uploadAsset(
-    id,
-    `school_identity.${extension(school.contentType)}`,
-    school.bytes,
-    school.contentType,
-  );
-  const adultPath = await uploadAsset(
-    id,
-    `adult_identity.${extension(adult.contentType)}`,
-    adult.bytes,
-    adult.contentType,
-  );
 
   const row: StoredJob = {
     id,
@@ -66,13 +63,13 @@ export async function createJobImpl(input: {
     plan: {},
     assets: {
       school_identity: {
-        path: schoolPath,
-        contentType: school.contentType,
+        path: input.schoolAsset.path,
+        contentType: input.schoolAsset.contentType,
         createdAt: now,
       },
       adult_identity: {
-        path: adultPath,
-        contentType: adult.contentType,
+        path: input.adultAsset.path,
+        contentType: input.adultAsset.contentType,
         createdAt: now,
       },
     },
@@ -88,12 +85,12 @@ export async function createJobImpl(input: {
   };
 
   await createJobState(row);
-  await logEvent(id, "intake", "info", "job created", {
+  await logEvent(id, "intake", "info", "job created from direct blob uploads", {
     mode: config.live ? "live" : "mock",
     test_mode: input.testMode,
-    school_bytes: school.bytes.byteLength,
-    adult_bytes: adult.bytes.byteLength,
-    storage: "vercel_blob",
+    school_bytes: input.schoolAsset.size,
+    adult_bytes: input.adultAsset.size,
+    storage: "vercel_blob_direct_upload",
   });
 
   return toView(await loadJob(id));

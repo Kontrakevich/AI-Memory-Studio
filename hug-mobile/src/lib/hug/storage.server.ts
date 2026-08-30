@@ -2,6 +2,8 @@ import { get, issueSignedToken, presignUrl, put } from "@vercel/blob";
 import { bytesToBase64 } from "./providers.server";
 import type { AssetRef, DiagnosticEvent, JobView, QcRecord, Stage } from "./types";
 
+export const MAX_INPUT_BYTES = 25 * 1024 * 1024;
+
 export type StoredJob = {
   id: string;
   status: JobView["status"];
@@ -29,6 +31,7 @@ type BlobAuthOptions = {
 };
 
 const ROOT = "hug/jobs";
+const INPUT_ROOT = "hug/intake";
 const statePath = (jobId: string) => `${ROOT}/${jobId}/state.json`;
 const diagnosticsPath = (jobId: string) => `${ROOT}/${jobId}/diagnostics.json`;
 const assetPath = (jobId: string, name: string) => `${ROOT}/${jobId}/assets/${name}`;
@@ -39,8 +42,6 @@ function blobAuth(): BlobAuthOptions {
 
   const storeId = process.env["BLOB_STORE_ID"];
   if (storeId) {
-    // On Vercel, @vercel/blob automatically receives and rotates VERCEL_OIDC_TOKEN
-    // at runtime. We only need to select the connected store here.
     return { storeId };
   }
 
@@ -49,6 +50,69 @@ function blobAuth(): BlobAuthOptions {
 
 export function blobConfigured() {
   return Boolean(process.env["BLOB_READ_WRITE_TOKEN"] || process.env["BLOB_STORE_ID"]);
+}
+
+function extensionForContentType(contentType: string) {
+  if (contentType === "image/png") return "png";
+  if (contentType === "image/webp") return "webp";
+  if (contentType === "image/heic" || contentType === "image/heif") return "heic";
+  return "jpg";
+}
+
+export async function createInputUploadTicket(input: {
+  slot: "school" | "adult";
+  contentType: string;
+  size: number;
+}) {
+  if (!blobConfigured()) {
+    throw new Error("Vercel Blob не подключён к production-проекту.");
+  }
+  if (!Number.isFinite(input.size) || input.size <= 0 || input.size > MAX_INPUT_BYTES) {
+    throw new Error("Размер фото недопустим. Максимум — 25 МБ на один исходник.");
+  }
+
+  const allowed = new Set([
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/heic",
+    "image/heif",
+  ]);
+  const contentType = input.contentType.trim().toLowerCase();
+  if (!allowed.has(contentType)) {
+    throw new Error("Поддерживаются JPEG, PNG, WebP, HEIC и HEIF.");
+  }
+
+  const uploadId = crypto.randomUUID();
+  const pathname = `${INPUT_ROOT}/${uploadId}/${input.slot}.${extensionForContentType(contentType)}`;
+  const validUntil = Date.now() + 10 * 60 * 1000;
+
+  const signedToken = await issueSignedToken({
+    pathname,
+    operations: ["put"],
+    validUntil,
+    allowedContentTypes: [contentType],
+    maximumSizeInBytes: MAX_INPUT_BYTES,
+    ...blobAuth(),
+  });
+
+  const { presignedUrl } = await presignUrl(signedToken, {
+    operation: "put",
+    pathname,
+    access: "private",
+    validUntil,
+    allowedContentTypes: [contentType],
+    maximumSizeInBytes: MAX_INPUT_BYTES,
+    addRandomSuffix: false,
+    allowOverwrite: false,
+  });
+
+  return {
+    uploadUrl: presignedUrl,
+    pathname,
+    contentType,
+    maxSizeBytes: MAX_INPUT_BYTES,
+  };
 }
 
 async function readJson<T>(pathname: string): Promise<T | null> {

@@ -5,6 +5,7 @@ import { HardDrive, KeyRound, Loader2, Settings2, Trash2 } from "lucide-react";
 import { PhotoCard } from "@/components/hug/PhotoCard";
 import {
   clearHugOpenRouterSecret,
+  createHugInputUpload,
   createHugJob,
   getHugCapabilities,
   setHugOpenRouterSecret,
@@ -13,20 +14,32 @@ import {
   ACTIVE_JOB_KEY,
   TEST_MODE_KEY,
   readLocal,
+  uploadOriginalPhoto,
+  validatePhotoFile,
   writeLocal,
 } from "@/lib/hug-client";
 
 export const Route = createFileRoute("/")({ component: Home });
 
+function errorMessage(error: unknown) {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "string" && error.trim()) return error;
+  if (error && typeof error === "object" && "message" in error) {
+    return String((error as { message?: unknown }).message || "Не удалось начать встречу");
+  }
+  return "Не удалось начать встречу. Откройте «Проверить систему» и повторите попытку.";
+}
+
 function Home() {
   const navigate = useNavigate();
   const createJob = useServerFn(createHugJob);
+  const createInputUpload = useServerFn(createHugInputUpload);
   const capabilities = useServerFn(getHugCapabilities);
   const saveOpenRouterSecret = useServerFn(setHugOpenRouterSecret);
   const clearOpenRouterSecret = useServerFn(clearHugOpenRouterSecret);
 
-  const [school, setSchool] = useState<string | null>(null);
-  const [adult, setAdult] = useState<string | null>(null);
+  const [school, setSchool] = useState<File | null>(null);
+  const [adult, setAdult] = useState<File | null>(null);
   const [testMode, setTestMode] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [caps, setCaps] = useState<any>(null);
@@ -35,6 +48,7 @@ function Home() {
   const [secretBusy, setSecretBusy] = useState(false);
   const [secretMessage, setSecretMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [busyLabel, setBusyLabel] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeJob, setActiveJob] = useState<string | null>(null);
 
@@ -98,19 +112,36 @@ function Home() {
     }
   }
 
+  async function uploadInput(slot: "school" | "adult", file: File) {
+    const contentType = validatePhotoFile(file);
+    const ticket = await createInputUpload({
+      data: { slot, contentType, size: file.size },
+    });
+    return uploadOriginalPhoto(file, ticket);
+  }
+
   async function start() {
     if (!school || !adult || busy) return;
     setBusy(true);
     setError(null);
+
     try {
+      setBusyLabel("Загружаем оригиналы…");
+      const [schoolAsset, adultAsset] = await Promise.all([
+        uploadInput("school", school),
+        uploadInput("adult", adult),
+      ]);
+
+      setBusyLabel("Создаём встречу…");
       const job = await createJob({
-        data: { schoolImage: school, adultImage: adult, testMode },
+        data: { schoolAsset, adultAsset, testMode },
       });
       writeLocal(ACTIVE_JOB_KEY, job.id);
       await navigate({ to: "/job/$jobId", params: { jobId: job.id } });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Не удалось начать встречу");
+      setError(errorMessage(e));
       setBusy(false);
+      setBusyLabel(null);
     }
   }
 
@@ -301,6 +332,12 @@ function Home() {
           />
         </div>
 
+        {busyLabel ? (
+          <p className="mt-4 rounded-xl border border-border bg-secondary p-3 text-xs text-foreground">
+            {busyLabel}
+          </p>
+        ) : null}
+
         {error ? (
           <p className="mt-4 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive-foreground">
             {error}
@@ -327,7 +364,7 @@ function Home() {
             className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-sm font-medium uppercase tracking-[0.22em] text-primary-foreground transition-opacity disabled:opacity-35"
           >
             {busy ? <Loader2 className="size-4 animate-spin" /> : null}
-            Встретить себя
+            {busy ? "Подготавливаем" : "Встретить себя"}
           </button>
         </div>
       </div>

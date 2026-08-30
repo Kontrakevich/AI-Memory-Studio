@@ -151,11 +151,26 @@ export type Capabilities = {
 
 export async function capabilitiesImpl(): Promise<Capabilities> {
   const config = getHugConfig();
+  const build = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local";
+  const keyChars = config.apiKey?.length ?? 0;
+  const keyFormatOk = Boolean(config.apiKey?.startsWith("sk-or-"));
   const checks: Capabilities["checks"] = [
+    {
+      name: "BACKEND_VERSION",
+      ok: true,
+      detail: build,
+    },
     {
       name: "OPENROUTER_API_KEY",
       ok: config.live,
       detail: config.live ? "ключ найден в защищённой серверной сессии" : "не задан — MOCK",
+    },
+    {
+      name: "OPENROUTER_KEY_FORMAT",
+      ok: keyFormatOk,
+      detail: config.live
+        ? `формат ${keyFormatOk ? "корректный" : "неверный"}; длина ${keyChars} символов`
+        : "ключ отсутствует",
     },
     {
       name: "VERCEL_BLOB",
@@ -167,11 +182,21 @@ export async function capabilitiesImpl(): Promise<Capabilities> {
   if (config.live) {
     try {
       const auth = await new OpenRouterTransport(config.apiKey).request<unknown>("/key");
-      if (!auth.ok) {
+      if (auth.ok) {
+        checks.push({
+          name: "OPENROUTER_AUTH",
+          ok: true,
+          detail: `защищённый запрос подтверждён; transport=${auth.meta.transport}`,
+        });
+      } else {
         const body = auth.data as { error?: { message?: string } } | null;
-        throw new Error(body?.error?.message ?? auth.raw ?? `HTTP ${auth.status}`);
+        const message = body?.error?.message ?? auth.raw ?? `HTTP ${auth.status}`;
+        checks.push({
+          name: "OPENROUTER_AUTH",
+          ok: false,
+          detail: `${message}; transport=${auth.meta.transport}; Authorization=${auth.meta.authHeaderSent ? "добавлен" : "не добавлен"}; HTTP=${auth.status}`,
+        });
       }
-      checks.push({ name: "OPENROUTER_AUTH", ok: true, detail: "защищённый запрос с ключом подтверждён" });
     } catch (error) {
       checks.push({
         name: "OPENROUTER_AUTH",

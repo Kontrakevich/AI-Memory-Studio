@@ -11,6 +11,7 @@ export type TransportResult<T> = {
     method: string;
     status: number;
     durationMs: number;
+    timeoutMs: number;
     requestBytes?: number;
     responseBytes?: number;
     transport: "node:https";
@@ -48,11 +49,14 @@ type NativeResponse = {
   bytes: Uint8Array;
 };
 
+const DEFAULT_TIMEOUT_MS = 120_000;
+
 function nativeHttps(
   endpoint: string,
   method: string,
   headers: Record<string, string>,
   payload?: string,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
 ): Promise<NativeResponse> {
   const url = new URL(endpoint);
   if (url.protocol !== "https:") {
@@ -71,7 +75,7 @@ function nativeHttps(
         path: `${url.pathname}${url.search}`,
         method,
         headers: requestHeaders,
-        timeout: 120_000,
+        timeout: timeoutMs,
       },
       (res) => {
         const chunks: Buffer[] = [];
@@ -87,7 +91,13 @@ function nativeHttps(
       },
     );
 
-    req.on("timeout", () => req.destroy(new Error("OpenRouter request timed out")));
+    req.on("timeout", () =>
+      req.destroy(
+        new Error(
+          `OpenRouter request timed out after ${Math.round(timeoutMs / 1000)}s (${url.pathname})`,
+        ),
+      ),
+    );
     req.on("error", reject);
     if (payload) req.write(payload);
     req.end();
@@ -118,14 +128,21 @@ export class OpenRouterTransport {
 
   async request<T>(
     pathOrUrl: string,
-    init: { method?: string; body?: unknown } = {},
+    init: { method?: string; body?: unknown; timeoutMs?: number } = {},
   ): Promise<TransportResult<T>> {
     if (!this.apiKey) throw new Error("OPENROUTER_API_KEY is not configured on the server");
     const method = init.method ?? (init.body ? "POST" : "GET");
     const endpoint = pathOrUrl.startsWith("http") ? pathOrUrl : `${this.baseUrl}${pathOrUrl}`;
     const payload = init.body ? JSON.stringify(init.body) : undefined;
+    const timeoutMs = init.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     const started = Date.now();
-    const response = await nativeHttps(endpoint, method, this.headers(Boolean(payload)), payload);
+    const response = await nativeHttps(
+      endpoint,
+      method,
+      this.headers(Boolean(payload)),
+      payload,
+      timeoutMs,
+    );
     const raw = Buffer.from(response.bytes).toString("utf8");
     let data: T | null = null;
     try {
@@ -142,6 +159,7 @@ export class OpenRouterTransport {
         method,
         status: response.status,
         durationMs: Date.now() - started,
+        timeoutMs,
         ...(payload ? { requestBytes: Buffer.byteLength(payload) } : {}),
         responseBytes: response.bytes.byteLength,
         transport: "node:https",
@@ -150,10 +168,10 @@ export class OpenRouterTransport {
     };
   }
 
-  async requestBinary(pathOrUrl: string) {
+  async requestBinary(pathOrUrl: string, timeoutMs = DEFAULT_TIMEOUT_MS) {
     if (!this.apiKey) throw new Error("OPENROUTER_API_KEY is not configured on the server");
     const endpoint = pathOrUrl.startsWith("http") ? pathOrUrl : `${this.baseUrl}${pathOrUrl}`;
-    const response = await nativeHttps(endpoint, "GET", this.headers(false));
+    const response = await nativeHttps(endpoint, "GET", this.headers(false), undefined, timeoutMs);
     const contentTypeRaw = response.headers["content-type"];
     const contentType = Array.isArray(contentTypeRaw)
       ? contentTypeRaw[0] ?? "application/octet-stream"

@@ -9,6 +9,7 @@ import {
   uploadAsset,
   type StoredJob,
 } from "./storage.server";
+import { OpenRouterTransport } from "./transport.server";
 import type { DiagnosticEvent, JobView } from "./types";
 
 function decodeDataUrl(dataUrl: string) {
@@ -154,7 +155,7 @@ export async function capabilitiesImpl(): Promise<Capabilities> {
     {
       name: "OPENROUTER_API_KEY",
       ok: config.live,
-      detail: config.live ? "секрет настроен на сервере" : "не задан — MOCK",
+      detail: config.live ? "ключ найден в защищённой серверной сессии" : "не задан — MOCK",
     },
     {
       name: "VERCEL_BLOB",
@@ -164,6 +165,21 @@ export async function capabilitiesImpl(): Promise<Capabilities> {
   ];
 
   if (config.live) {
+    try {
+      const auth = await new OpenRouterTransport(config.apiKey).request<unknown>("/key");
+      if (!auth.ok) {
+        const body = auth.data as { error?: { message?: string } } | null;
+        throw new Error(body?.error?.message ?? auth.raw ?? `HTTP ${auth.status}`);
+      }
+      checks.push({ name: "OPENROUTER_AUTH", ok: true, detail: "защищённый запрос с ключом подтверждён" });
+    } catch (error) {
+      checks.push({
+        name: "OPENROUTER_AUTH",
+        ok: false,
+        detail: error instanceof Error ? error.message : "ошибка авторизации",
+      });
+    }
+
     for (const [name, fn] of [
       ["GET /images/models", () => new NanoBananaProvider().capabilities()],
       ["GET /videos/models", () => new SeedanceProvider().capabilities()],

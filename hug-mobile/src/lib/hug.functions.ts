@@ -64,9 +64,14 @@ export const setHugOpenRouterSecret = createServerFn({ method: "POST" })
   .validator((data: unknown) => openRouterSecretSchema.parse(data))
   .handler(async ({ data }): Promise<{ connected: true }> => {
     const { setCookie } = await import("@tanstack/react-start/server");
-    const { OPENROUTER_SESSION_COOKIE } = await import("./hug/config.server");
+    const { OPENROUTER_SESSION_COOKIE, normalizeOpenRouterKey } = await import("./hug/config.server");
+    const normalized = normalizeOpenRouterKey(data.apiKey);
 
-    setCookie(OPENROUTER_SESSION_COOKIE, data.apiKey, {
+    if (!normalized || !normalized.startsWith("sk-or-")) {
+      throw new Error("Ключ OpenRouter имеет неверный формат. Нужен ключ, начинающийся с sk-or-.");
+    }
+
+    setCookie(OPENROUTER_SESSION_COOKIE, normalized, {
       httpOnly: true,
       secure: true,
       sameSite: "strict",

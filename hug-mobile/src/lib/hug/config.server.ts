@@ -30,6 +30,14 @@ export function normalizeOpenRouterKey(value: string | null | undefined) {
   if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
     key = key.slice(1, -1).trim();
   }
+
+  // OpenRouter keys are `sk-or-v1-` plus 64 hexadecimal characters.
+  // Some password managers / copy flows can preserve only the 64-character body.
+  // Recover that unambiguous case automatically without exposing or logging the secret.
+  if (/^[0-9a-f]{64}$/i.test(key)) {
+    key = `sk-or-v1-${key}`;
+  }
+
   return key || null;
 }
 

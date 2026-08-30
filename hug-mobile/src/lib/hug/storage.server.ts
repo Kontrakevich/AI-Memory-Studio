@@ -4,6 +4,8 @@ import type { AssetRef, DiagnosticEvent, JobView, QcRecord, Stage } from "./type
 
 export const MAX_INPUT_BYTES = 25 * 1024 * 1024;
 
+type InputContentType = "image/jpeg" | "image/png" | "image/webp" | "image/heic" | "image/heif";
+
 export type StoredJob = {
   id: string;
   status: JobView["status"];
@@ -71,14 +73,14 @@ export async function createInputUploadTicket(input: {
     throw new Error("Размер фото недопустим. Максимум — 25 МБ на один исходник.");
   }
 
-  const allowed = new Set([
+  const allowed = new Set<InputContentType>([
     "image/jpeg",
     "image/png",
     "image/webp",
     "image/heic",
     "image/heif",
   ]);
-  const contentType = input.contentType.trim().toLowerCase();
+  const contentType = input.contentType.trim().toLowerCase() as InputContentType;
   if (!allowed.has(contentType)) {
     throw new Error("Поддерживаются JPEG, PNG, WebP, HEIC и HEIF.");
   }

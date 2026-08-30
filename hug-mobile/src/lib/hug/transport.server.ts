@@ -1,3 +1,4 @@
+import { request as httpsRequest } from "node:https";
 import { getHugConfig } from "./config.server";
 
 export type TransportResult<T> = {
@@ -12,6 +13,8 @@ export type TransportResult<T> = {
     durationMs: number;
     requestBytes?: number;
     responseBytes?: number;
+    transport: "node:https";
+    authHeaderSent: boolean;
   };
 };
 
@@ -39,6 +42,58 @@ function normalizeApiKey(value: string | null | undefined) {
   return trimmed.replace(/^Bearer\s+/i, "").trim() || null;
 }
 
+type NativeResponse = {
+  status: number;
+  headers: Record<string, string | string[] | undefined>;
+  bytes: Uint8Array;
+};
+
+function nativeHttps(
+  endpoint: string,
+  method: string,
+  headers: Record<string, string>,
+  payload?: string,
+): Promise<NativeResponse> {
+  const url = new URL(endpoint);
+  if (url.protocol !== "https:") {
+    throw new Error(`OpenRouterTransport only supports HTTPS endpoints, got ${url.protocol}`);
+  }
+
+  return new Promise((resolve, reject) => {
+    const requestHeaders: Record<string, string> = { ...headers };
+    if (payload) requestHeaders["Content-Length"] = String(Buffer.byteLength(payload));
+
+    const req = httpsRequest(
+      {
+        protocol: url.protocol,
+        hostname: url.hostname,
+        port: url.port || 443,
+        path: `${url.pathname}${url.search}`,
+        method,
+        headers: requestHeaders,
+        timeout: 120_000,
+      },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+        res.on("end", () => {
+          const buffer = Buffer.concat(chunks);
+          resolve({
+            status: res.statusCode ?? 0,
+            headers: res.headers,
+            bytes: new Uint8Array(buffer),
+          });
+        });
+      },
+    );
+
+    req.on("timeout", () => req.destroy(new Error("OpenRouter request timed out")));
+    req.on("error", reject);
+    if (payload) req.write(payload);
+    req.end();
+  });
+}
+
 export class OpenRouterTransport {
   private baseUrl: string;
   private apiKey: string | null;
@@ -51,11 +106,13 @@ export class OpenRouterTransport {
 
   private headers(json: boolean) {
     if (!this.apiKey) throw new Error("OPENROUTER_API_KEY is not configured on the server");
-    const headers = new Headers();
-    headers.set("authorization", `Bearer ${this.apiKey}`);
-    headers.set("HTTP-Referer", "https://github.com/Kontrakevich/AI-Memory-Studio");
-    headers.set("X-Title", "HUG Mobile");
-    if (json) headers.set("content-type", "application/json");
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${this.apiKey}`,
+      Accept: "application/json",
+      "HTTP-Referer": "https://hug-mobile.vercel.app",
+      "X-Title": "HUG Mobile",
+    };
+    if (json) headers["Content-Type"] = "application/json";
     return headers;
   }
 
@@ -68,19 +125,15 @@ export class OpenRouterTransport {
     const endpoint = pathOrUrl.startsWith("http") ? pathOrUrl : `${this.baseUrl}${pathOrUrl}`;
     const payload = init.body ? JSON.stringify(init.body) : undefined;
     const started = Date.now();
-    const response = await fetch(endpoint, {
-      method,
-      headers: this.headers(Boolean(payload)),
-      redirect: "error",
-      ...(payload ? { body: payload } : {}),
-    });
-    const raw = await response.text();
+    const response = await nativeHttps(endpoint, method, this.headers(Boolean(payload)), payload);
+    const raw = Buffer.from(response.bytes).toString("utf8");
     let data: T | null = null;
     try {
       data = raw ? (JSON.parse(raw) as T) : null;
     } catch {}
+
     return {
-      ok: response.ok,
+      ok: response.status >= 200 && response.status < 300,
       status: response.status,
       data,
       ...(data ? {} : { raw: raw.slice(0, 1000) }),
@@ -89,8 +142,10 @@ export class OpenRouterTransport {
         method,
         status: response.status,
         durationMs: Date.now() - started,
-        ...(payload ? { requestBytes: payload.length } : {}),
-        responseBytes: raw.length,
+        ...(payload ? { requestBytes: Buffer.byteLength(payload) } : {}),
+        responseBytes: response.bytes.byteLength,
+        transport: "node:https",
+        authHeaderSent: true,
       },
     };
   }
@@ -98,18 +153,21 @@ export class OpenRouterTransport {
   async requestBinary(pathOrUrl: string) {
     if (!this.apiKey) throw new Error("OPENROUTER_API_KEY is not configured on the server");
     const endpoint = pathOrUrl.startsWith("http") ? pathOrUrl : `${this.baseUrl}${pathOrUrl}`;
-    const response = await fetch(endpoint, {
-      headers: this.headers(false),
-      redirect: "error",
-    });
-    if (!response.ok) {
-      return { ok: false, status: response.status, bytes: null, contentType: "" };
+    const response = await nativeHttps(endpoint, "GET", this.headers(false));
+    const contentTypeRaw = response.headers["content-type"];
+    const contentType = Array.isArray(contentTypeRaw)
+      ? contentTypeRaw[0] ?? "application/octet-stream"
+      : contentTypeRaw ?? "application/octet-stream";
+
+    if (response.status < 200 || response.status >= 300) {
+      return { ok: false, status: response.status, bytes: null, contentType };
     }
+
     return {
       ok: true,
       status: response.status,
-      bytes: new Uint8Array(await response.arrayBuffer()),
-      contentType: response.headers.get("content-type") ?? "application/octet-stream",
+      bytes: response.bytes,
+      contentType,
     };
   }
 }

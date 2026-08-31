@@ -275,8 +275,11 @@ export class SeedanceProvider {
     });
 
     if (!res.ok || !res.data) {
-      const raw = String(res.raw ?? "");
-      if (raw.includes("InputImageSensitiveContentDetected") || raw.includes("PrivacyInformation")) {
+      const errorText = `${String(res.raw ?? "")} ${JSON.stringify(res.data ?? {})}`;
+      if (
+        errorText.includes("InputImageSensitiveContentDetected") ||
+        errorText.includes("PrivacyInformation")
+      ) {
         throw new VideoPrivacyError(
           `SeedanceProvider.submit: Seedance отклонил подготовленные MASTER/MEETING кадры по фильтру приватности. HTTP ${res.status}`,
         );

@@ -127,8 +127,6 @@ export class NanoBananaProvider {
         if (!res.ok || !res.data) {
           const reason = imageApiError(res);
           attempts.push(`${route.label}: HTTP ${res.status} — ${reason}`);
-
-          // 4xx usually means the request itself is invalid; switching Google backends will not help.
           if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) {
             fail(`NanoBananaProvider (${route.label})`, res);
           }
@@ -185,6 +183,63 @@ export type VideoJob = {
   usage?: Record<string, unknown>;
 };
 
+export class VideoPrivacyError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "VideoPrivacyError";
+  }
+}
+
+function frameImages(firstFrame: ImageInput, lastFrame?: ImageInput) {
+  const frames: unknown[] = [
+    {
+      type: "image_url",
+      image_url: { url: firstFrame.dataUrl },
+      frame_type: "first_frame",
+    },
+  ];
+  if (lastFrame) {
+    frames.push({
+      type: "image_url",
+      image_url: { url: lastFrame.dataUrl },
+      frame_type: "last_frame",
+    });
+  }
+  return frames;
+}
+
+async function pollVideo(transport: OpenRouterTransport, providerName: string, job: VideoJob) {
+  const r = await transport.request<{
+    status?: string;
+    error?: { message?: string };
+    unsigned_urls?: string[];
+    usage?: Record<string, unknown>;
+  }>(job.pollingUrl ?? `/videos/${encodeURIComponent(job.jobId)}`);
+  if (!r.ok || !r.data) fail(`${providerName}.poll`, r);
+  return {
+    result: {
+      status: r.data.status ?? "unknown",
+      ...(r.data.error?.message ? { error: r.data.error.message } : {}),
+      ...(r.data.unsigned_urls ? { unsignedUrls: r.data.unsigned_urls } : {}),
+      ...(r.data.usage ? { usage: r.data.usage } : {}),
+    },
+    meta: { provider: providerName, ...r.meta },
+  };
+}
+
+async function videoContent(
+  transport: OpenRouterTransport,
+  providerName: string,
+  job: VideoJob,
+  unsignedUrl?: string,
+) {
+  const r = await transport.requestBinary(
+    unsignedUrl ?? `/videos/${encodeURIComponent(job.jobId)}/content?index=0`,
+  );
+  if (!r.ok || !r.bytes) throw new Error(`${providerName}.content: HTTP ${r.status}`);
+  return { bytes: r.bytes, contentType: r.contentType || "video/mp4" };
+}
+
 export class SeedanceProvider {
   constructor(private transport = new OpenRouterTransport()) {}
 
@@ -202,20 +257,6 @@ export class SeedanceProvider {
     const c = getHugConfig();
     const model = c.models.video;
     const lastFrame = references.find((r) => r.label === "MEETING_REFERENCE_FRAME");
-    const frameImages: unknown[] = [
-      {
-        type: "image_url",
-        image_url: { url: firstFrame.dataUrl },
-        frame_type: "first_frame",
-      },
-    ];
-    if (lastFrame) {
-      frameImages.push({
-        type: "image_url",
-        image_url: { url: lastFrame.dataUrl },
-        frame_type: "last_frame",
-      });
-    }
 
     const res = await this.transport.request<{
       id?: string;
@@ -229,15 +270,15 @@ export class SeedanceProvider {
         resolution: "720p",
         aspect_ratio: c.aspectRatio,
         generate_audio: false,
-        frame_images: frameImages,
+        frame_images: frameImages(firstFrame, lastFrame),
       },
     });
 
     if (!res.ok || !res.data) {
       const raw = String(res.raw ?? "");
       if (raw.includes("InputImageSensitiveContentDetected") || raw.includes("PrivacyInformation")) {
-        throw new Error(
-          "SeedanceProvider.submit: Seedance отклонил один из подготовленных MASTER/MEETING кадров по фильтру приватности. Сырые SCHOOL_IDENTITY и ADULT_IDENTITY в video-запрос не отправляются.",
+        throw new VideoPrivacyError(
+          `SeedanceProvider.submit: Seedance отклонил подготовленные MASTER/MEETING кадры по фильтру приватности. HTTP ${res.status}`,
         );
       }
       fail("SeedanceProvider.submit", res);
@@ -260,40 +301,68 @@ export class SeedanceProvider {
     };
   }
 
-  async poll(
-    job: VideoJob,
-  ): Promise<
-    ProviderCall<{
-      status: string;
-      error?: string;
-      unsignedUrls?: string[];
-      usage?: Record<string, unknown>;
-    }>
-  > {
-    const r = await this.transport.request<{
-      status?: string;
-      error?: { message?: string };
-      unsigned_urls?: string[];
-      usage?: Record<string, unknown>;
-    }>(job.pollingUrl ?? `/videos/${encodeURIComponent(job.jobId)}`);
-    if (!r.ok || !r.data) fail("SeedanceProvider.poll", r);
-    return {
-      result: {
-        status: r.data.status ?? "unknown",
-        ...(r.data.error?.message ? { error: r.data.error.message } : {}),
-        ...(r.data.unsigned_urls ? { unsignedUrls: r.data.unsigned_urls } : {}),
-        ...(r.data.usage ? { usage: r.data.usage } : {}),
-      },
-      meta: { provider: "SeedanceProvider", ...r.meta },
-    };
+  async poll(job: VideoJob) {
+    return pollVideo(this.transport, "SeedanceProvider", job);
   }
 
   async content(job: VideoJob, unsignedUrl?: string) {
-    const r = await this.transport.requestBinary(
-      unsignedUrl ?? `/videos/${encodeURIComponent(job.jobId)}/content?index=0`,
-    );
-    if (!r.ok || !r.bytes) throw new Error(`SeedanceProvider.content: HTTP ${r.status}`);
-    return { bytes: r.bytes, contentType: r.contentType || "video/mp4" };
+    return videoContent(this.transport, "SeedanceProvider", job, unsignedUrl);
+  }
+}
+
+export const KLING_FALLBACK_MODEL = "kwaivgi/kling-v3.0-std";
+
+export class KlingProvider {
+  constructor(private transport = new OpenRouterTransport()) {}
+
+  async submit(
+    prompt: string,
+    firstFrame: ImageInput,
+    lastFrame?: ImageInput,
+  ): Promise<ProviderCall<VideoJob>> {
+    const c = getHugConfig();
+    const res = await this.transport.request<{
+      id?: string;
+      polling_url?: string;
+      usage?: Record<string, unknown>;
+    }>("/videos", {
+      body: {
+        model: KLING_FALLBACK_MODEL,
+        prompt,
+        duration: c.videoDurationSeconds,
+        resolution: "720p",
+        aspect_ratio: c.aspectRatio,
+        generate_audio: false,
+        frame_images: frameImages(firstFrame, lastFrame),
+      },
+    });
+
+    if (!res.ok || !res.data) fail("KlingProvider.submit", res);
+    if (!res.data.id) throw new Error("KlingProvider: no video job id returned");
+
+    return {
+      result: {
+        jobId: res.data.id,
+        ...(res.data.polling_url ? { pollingUrl: res.data.polling_url } : {}),
+        ...(res.data.usage ? { usage: res.data.usage } : {}),
+      },
+      meta: {
+        provider: "KlingProvider",
+        model: KLING_FALLBACK_MODEL,
+        video_input_mode: lastFrame ? "first_last_frame" : "first_frame_only",
+        raw_identity_references_sent: false,
+        fallback: true,
+        ...res.meta,
+      },
+    };
+  }
+
+  async poll(job: VideoJob) {
+    return pollVideo(this.transport, "KlingProvider", job);
+  }
+
+  async content(job: VideoJob, unsignedUrl?: string) {
+    return videoContent(this.transport, "KlingProvider", job, unsignedUrl);
   }
 }
 

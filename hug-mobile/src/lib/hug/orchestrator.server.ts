@@ -1,8 +1,11 @@
 import { getHugConfig } from "./config.server";
 import {
   AnalysisProvider,
+  KlingProvider,
+  KLING_FALLBACK_MODEL,
   NanoBananaProvider,
   SeedanceProvider,
+  VideoPrivacyError,
   type ImageInput,
   type VideoJob,
 } from "./providers.server";
@@ -194,6 +197,7 @@ async function executeStage(row: JobRow, stage: Stage, live: boolean): Promise<R
   const analysis = new AnalysisProvider();
   const banana = new NanoBananaProvider();
   const seedance = new SeedanceProvider();
+  const kling = new KlingProvider();
   const attempt = (row.attempts?.[stage] ?? 0) + 1;
 
   const putAsset = async (key: string, bytes: Uint8Array, contentType: string, mock: boolean) => {
@@ -323,17 +327,45 @@ async function executeStage(row: JobRow, stage: Stage, live: boolean): Promise<R
 
       const jobs = { ...row.provider_jobs } as Record<string, any>;
       let job = jobs.video as VideoJob | undefined;
+
       if (!job) {
         const master = await ref(row, "master_first_frame", "MASTER_FIRST_FRAME");
         const meeting = await ref(row, "meeting_reference_frame", "MEETING_REFERENCE_FRAME");
-        const school = await ref(row, "school_identity", "SCHOOL_IDENTITY");
-        const adult = await ref(row, "adult_identity", "ADULT_IDENTITY");
-        const submitted = await seedance.submit(videoPrompt(row.passport), master, [
-          meeting,
-          school,
-          adult,
-        ]);
-        job = submitted.result;
+        const prompt = videoPrompt(row.passport);
+
+        try {
+          const submitted = await seedance.submit(prompt, master, [meeting]);
+          job = submitted.result;
+          jobs.video_provider = "seedance";
+          jobs.video_model = cfg.models.video;
+          jobs.video_submit_meta = submitted.meta;
+        } catch (error) {
+          if (!(error instanceof VideoPrivacyError)) throw error;
+
+          await logEvent(
+            row.id,
+            stage,
+            "warn",
+            "Seedance privacy block; automatic fallback to Kling v3.0 Standard",
+            {
+              reason: error.message,
+              primary_model: cfg.models.video,
+              fallback_model: KLING_FALLBACK_MODEL,
+              input_frames: ["MASTER_FIRST_FRAME", "MEETING_REFERENCE_FRAME"],
+              raw_identity_references_sent: false,
+            },
+            "SeedanceProvider",
+            cfg.models.video,
+            attempt,
+          );
+
+          const submitted = await kling.submit(prompt, master, meeting);
+          job = submitted.result;
+          jobs.video_provider = "kling";
+          jobs.video_model = KLING_FALLBACK_MODEL;
+          jobs.video_submit_meta = submitted.meta;
+        }
+
         jobs.video = job;
         await saveJob(row.id, { provider_jobs: jobs });
         await logEvent(
@@ -341,34 +373,57 @@ async function executeStage(row: JobRow, stage: Stage, live: boolean): Promise<R
           stage,
           "info",
           "video job submitted",
-          { job_id: job.jobId, polling_url: job.pollingUrl ?? null },
-          "SeedanceProvider",
-          cfg.models.video,
+          {
+            job_id: job.jobId,
+            polling_url: job.pollingUrl ?? null,
+            selected_provider: jobs.video_provider,
+            selected_model: jobs.video_model,
+            raw_identity_references_sent: false,
+          },
+          jobs.video_provider === "kling" ? "KlingProvider" : "SeedanceProvider",
+          String(jobs.video_model ?? cfg.models.video),
           attempt,
         );
       }
 
+      const activeProvider = jobs.video_provider === "kling" ? kling : seedance;
+      const activeProviderName = jobs.video_provider === "kling" ? "KlingProvider" : "SeedanceProvider";
+      const activeModel = String(
+        jobs.video_model ?? (jobs.video_provider === "kling" ? KLING_FALLBACK_MODEL : cfg.models.video),
+      );
+
       let polled;
       try {
-        polled = await seedance.poll(job);
+        polled = await activeProvider.poll(job);
       } catch (error) {
-        await logEvent(row.id, stage, "warn", "video polling transient failure", {
-          job_id: job.jobId,
-          error: error instanceof Error ? error.message : String(error),
-        });
+        await logEvent(
+          row.id,
+          stage,
+          "warn",
+          "video polling transient failure",
+          {
+            job_id: job.jobId,
+            provider: activeProviderName,
+            model: activeModel,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          activeProviderName,
+          activeModel,
+          attempt,
+        );
         return { __hold: true, provider_jobs: jobs };
       }
 
       const status = polled.result.status.toLowerCase();
       if (["failed", "cancelled", "expired"].includes(status)) {
-        throw new Error(`video generation failed: ${polled.result.error ?? status}`);
+        throw new Error(`${activeProviderName}: video generation failed: ${polled.result.error ?? status}`);
       }
       if (!["completed", "succeeded", "success", "done"].includes(status)) {
         return { __hold: true, provider_jobs: jobs };
       }
 
       jobs.video_usage = polled.result.usage ?? null;
-      const content = await seedance.content(job, polled.result.unsignedUrls?.[0]);
+      const content = await activeProvider.content(job, polled.result.unsignedUrls?.[0]);
       return {
         provider_jobs: jobs,
         ...(await putAsset("final_video", content.bytes, content.contentType, false)),

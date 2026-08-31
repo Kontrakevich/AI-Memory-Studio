@@ -105,6 +105,28 @@ export async function advanceJobImpl(jobId: string) {
 }
 
 export async function retryJobImpl(jobId: string) {
+  const row = await loadJob(jobId);
+
+  if (row.current_stage === "video") {
+    const providerJobs = { ...(row.provider_jobs ?? {}) } as Record<string, unknown>;
+    delete providerJobs.video;
+    delete providerJobs.video_provider;
+    delete providerJobs.video_model;
+    delete providerJobs.video_submit_meta;
+    delete providerJobs.video_usage;
+
+    await patchJobState(jobId, {
+      provider_jobs: providerJobs,
+      status: "running",
+      error: null,
+    });
+
+    await logEvent(jobId, "video", "info", "stale video provider job cleared before manual retry", {
+      preserved_assets: ["master_first_frame", "meeting_reference_frame"],
+      raw_identity_references_sent: false,
+    });
+  }
+
   return retryStage(jobId);
 }
 

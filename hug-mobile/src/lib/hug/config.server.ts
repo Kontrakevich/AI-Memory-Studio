@@ -53,7 +53,7 @@ export function getHugConfig(): HugConfig {
     models: {
       analysis: env("HUG_ANALYSIS_MODEL") ?? "google/gemini-2.5-flash",
       image: env("HUG_IMAGE_MODEL") ?? "google/gemini-3-pro-image",
-      video: env("HUG_VIDEO_MODEL") ?? "bytedance/seedance-2.0",
+      video: env("HUG_VIDEO_MODEL") ?? "bytedance/seedance-2.5",
     },
     qcThresholds: {
       master: num("HUG_QC_MASTER_THRESHOLD", 0.7),

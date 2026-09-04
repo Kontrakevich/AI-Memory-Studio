@@ -50,14 +50,16 @@ async def refresh_registry(force: bool = False) -> dict[str, Any]:
     if cached and _fresh(cached) and not force:
         return cached
 
-    general_result, image_result, video_result = await _gather_catalogs()
+    general_result, video_understanding_result, image_result, video_result = await _gather_catalogs()
     registry = {
         "refreshed_at": _now().isoformat(),
         "general": _items(general_result.get("data")) if general_result.get("ok") else [],
+        "video_understanding": _items(video_understanding_result.get("data")) if video_understanding_result.get("ok") else [],
         "images": _items(image_result.get("data")) if image_result.get("ok") else [],
         "videos": _items(video_result.get("data")) if video_result.get("ok") else [],
         "errors": {
             "general": None if general_result.get("ok") else general_result.get("error") or general_result.get("data"),
+            "video_understanding": None if video_understanding_result.get("ok") else video_understanding_result.get("error") or video_understanding_result.get("data"),
             "images": None if image_result.get("ok") else image_result.get("error") or image_result.get("data"),
             "videos": None if video_result.get("ok") else video_result.get("error") or video_result.get("data"),
         },
@@ -67,11 +69,12 @@ async def refresh_registry(force: bool = False) -> dict[str, Any]:
     return registry
 
 
-async def _gather_catalogs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+async def _gather_catalogs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     import asyncio
 
     return await asyncio.gather(
         openrouter_v3.list_general_models(),
+        openrouter_v3.list_video_understanding_models(),
         openrouter_v3.list_image_models(),
         openrouter_v3.list_video_models(),
     )
@@ -97,14 +100,11 @@ def _first_matching(models: Iterable[dict[str, Any]], model_id: str) -> Optional
     return None
 
 
-def choose_vision_model(registry: dict[str, Any], requested: str | None = None) -> dict[str, Any]:
-    models = registry.get("general") or []
-    preferred = requested or settings.openrouter_vision_model
+def _rank_understanding(models: list[dict[str, Any]], preferred: str) -> dict[str, Any]:
     exact = _first_matching(models, preferred)
     if exact:
         return {"id": preferred, "reason": "preferred_available", "metadata": exact}
 
-    # General endpoint is already filtered to image input + text output.
     scored: list[tuple[int, dict[str, Any]]] = []
     for model in models:
         mid = _id(model)
@@ -116,7 +116,7 @@ def choose_vision_model(registry: dict[str, Any], requested: str | None = None) 
             score += min(int(ctx) // 100_000, 10)
         except Exception:
             pass
-        if any(token in mid.lower() for token in ("gemini", "gpt", "claude", "qwen", "minimax")):
+        if any(token in mid.lower() for token in ("gemini", "gpt", "claude", "qwen", "minimax", "reka")):
             score += 2
         scored.append((score, model))
     if not scored:
@@ -124,6 +124,16 @@ def choose_vision_model(registry: dict[str, Any], requested: str | None = None) 
     scored.sort(key=lambda item: item[0], reverse=True)
     best = scored[0][1]
     return {"id": _id(best), "reason": "capability_rank", "metadata": best}
+
+
+def choose_vision_model(registry: dict[str, Any], requested: str | None = None) -> dict[str, Any]:
+    preferred = requested or settings.openrouter_vision_model
+    return _rank_understanding(registry.get("general") or [], preferred)
+
+
+def choose_video_qa_model(registry: dict[str, Any], requested: str | None = None) -> dict[str, Any]:
+    preferred = requested or getattr(settings, "openrouter_video_qa_model", "openrouter/auto-beta")
+    return _rank_understanding(registry.get("video_understanding") or [], preferred)
 
 
 def choose_image_model(registry: dict[str, Any], requested: str | None = None) -> dict[str, Any]:
@@ -228,6 +238,7 @@ def registry_summary(registry: dict[str, Any]) -> dict[str, Any]:
     return {
         "refreshed_at": registry.get("refreshed_at"),
         "vision_count": len(registry.get("general") or []),
+        "video_understanding_count": len(registry.get("video_understanding") or []),
         "image_count": len(registry.get("images") or []),
         "video_count": len(registry.get("videos") or []),
         "errors": registry.get("errors") or {},

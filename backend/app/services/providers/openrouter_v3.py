@@ -76,13 +76,21 @@ def parse_json_text(text: str) -> dict[str, Any]:
     return {"raw": raw, "_parse_error": True}
 
 
-async def list_general_models() -> dict[str, Any]:
+async def _list_models_for_input(modality: str) -> dict[str, Any]:
     if not settings.openrouter_api_key:
         return {"ok": False, "error": "OPENROUTER_API_KEY is empty"}
-    params = {"input_modalities": "image", "output_modalities": "text"}
+    params = {"input_modalities": modality, "output_modalities": "text"}
     async with httpx.AsyncClient(timeout=60) as client:
         response = await client.get(f"{BASE_URL}/models", headers=_headers(False), params=params)
     return {"ok": response.is_success, "status_code": response.status_code, "data": _json_or_text(response)}
+
+
+async def list_general_models() -> dict[str, Any]:
+    return await _list_models_for_input("image")
+
+
+async def list_video_understanding_models() -> dict[str, Any]:
+    return await _list_models_for_input("video")
 
 
 async def list_image_models() -> dict[str, Any]:
@@ -101,20 +109,12 @@ async def list_video_models() -> dict[str, Any]:
     return {"ok": response.is_success, "status_code": response.status_code, "data": _json_or_text(response)}
 
 
-async def analyze_images_json(
-    prompt: str,
-    image_paths: Iterable[str | Path],
-    model: str,
-    timeout: int = 300,
-) -> dict[str, Any]:
+async def _chat_content_json(prompt: str, content: list[dict[str, Any]], model: str, timeout: int) -> dict[str, Any]:
     if not settings.openrouter_api_key:
         return {"ok": False, "error": "OPENROUTER_API_KEY is empty"}
-    content: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
-    for path in image_paths:
-        content.append({"type": "image_url", "image_url": {"url": file_to_data_url(path)}})
     payload = {
         "model": model,
-        "messages": [{"role": "user", "content": content}],
+        "messages": [{"role": "user", "content": [{"type": "text", "text": prompt}, *content]}],
         "temperature": 0,
         "provider": {"data_collection": "deny", "allow_fallbacks": True},
     }
@@ -129,6 +129,26 @@ async def analyze_images_json(
         "text": text,
         "json": parse_json_text(text) if response.is_success else {},
     }
+
+
+async def analyze_images_json(
+    prompt: str,
+    image_paths: Iterable[str | Path],
+    model: str,
+    timeout: int = 300,
+) -> dict[str, Any]:
+    media = [{"type": "image_url", "image_url": {"url": file_to_data_url(path)}} for path in image_paths]
+    return await _chat_content_json(prompt, media, model, timeout)
+
+
+async def analyze_video_url_json(
+    prompt: str,
+    video_url: str,
+    model: str,
+    timeout: int = 600,
+) -> dict[str, Any]:
+    media = [{"type": "video_url", "video_url": {"url": video_url}}]
+    return await _chat_content_json(prompt, media, model, timeout)
 
 
 async def generate_image(

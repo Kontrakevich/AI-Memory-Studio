@@ -12,6 +12,8 @@ from .memory_models import MemoryProjectMeta, PIPELINE_STAGES, ProjectStateV3, S
 from .settings import settings
 from .storage import load_json, save_json
 
+PUBLIC_MEDIA_ROOTS = {"cards", "anchors", "video", "preview"}
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -30,6 +32,7 @@ def memory_project_dir(project_id: str) -> Path:
         "scene",
         "anchors",
         "video",
+        "preview",
         "qa",
         "logs",
     ]:
@@ -182,12 +185,20 @@ def public_asset_url(project_id: str, relative_path: str) -> str | None:
     if not settings.public_base_url:
         return None
     clean = relative_path.replace("\\", "/").lstrip("/")
+    first = clean.split("/", 1)[0]
+    if first not in PUBLIC_MEDIA_ROOTS:
+        return None
     return f"{settings.public_base_url.rstrip('/')}/media/{project_id}/{clean}"
 
 
 def resolve_media(project_id: str, relative_path: str) -> Path:
+    clean = relative_path.replace("\\", "/").lstrip("/")
+    first = clean.split("/", 1)[0]
+    if first not in PUBLIC_MEDIA_ROOTS:
+        raise ValueError("This project asset is private and cannot be served by the public media endpoint")
+
     root = memory_project_dir(project_id).resolve()
-    target = (root / relative_path).resolve()
+    target = (root / clean).resolve()
     if root != target and root not in target.parents:
         raise ValueError("Invalid media path")
     if not target.exists() or not target.is_file():

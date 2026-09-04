@@ -132,35 +132,44 @@ def choose_vision_model(registry: dict[str, Any], requested: str | None = None) 
 
 
 def choose_video_qa_model(registry: dict[str, Any], requested: str | None = None) -> dict[str, Any]:
-    preferred = requested or getattr(settings, "openrouter_video_qa_model", "openrouter/auto-beta")
+    preferred = requested or settings.openrouter_video_qa_model
     return _rank_understanding(registry.get("video_understanding") or [], preferred)
 
 
 def choose_image_model(registry: dict[str, Any], requested: str | None = None) -> dict[str, Any]:
     models = registry.get("images") or []
     preferred = requested or settings.openrouter_image_model
+
+    def compatible(model: dict[str, Any]) -> bool:
+        return "input_references" in _supported_parameters(model)
+
     exact = _first_matching(models, preferred)
-    if exact:
-        return {"id": preferred, "reason": "preferred_available", "metadata": exact}
+    if exact and compatible(exact):
+        return {"id": preferred, "reason": "preferred_reference_capable", "metadata": exact}
 
     scored: list[tuple[int, dict[str, Any]]] = []
     for model in models:
         mid = _id(model)
-        if not mid:
+        if not mid or not compatible(model):
             continue
         params = _supported_parameters(model)
-        score = 0
-        if "input_references" in params:
-            score += 10
+        score = 10
         if "resolution" in params:
             score += 2
         if "aspect_ratio" in params:
             score += 2
-        if any(token in mid.lower() for token in ("image", "seedream", "flux", "grok", "recraft")):
+        if "n" in params:
+            score += 1
+        if any(token in mid.lower() for token in ("gemini", "gpt-image", "seedream", "flux", "grok", "recraft")):
             score += 1
         scored.append((score, model))
     if not scored:
-        return {"id": preferred, "reason": "catalog_empty_use_config", "metadata": {}}
+        return {
+            "id": "",
+            "reason": "no_reference_capable_image_model",
+            "metadata": {},
+            "error": "No OpenRouter image model currently advertises input_references support",
+        }
     scored.sort(key=lambda item: item[0], reverse=True)
     best = scored[0][1]
     return {"id": _id(best), "reason": "reference_capability_rank", "metadata": best}
@@ -211,23 +220,21 @@ def choose_video_model(
         if not mid or not compatible(model):
             continue
         frames = model.get("supported_frame_images") or []
-        score = 0
-        if "first_frame" in frames:
-            score += 10
+        score = 10 if "first_frame" in frames else 0
         if prefer_last_frame and "last_frame" in frames:
             score += 8
         if model.get("supports_audio") or model.get("supported_audio"):
             score += 1
-        refs = model.get("supported_input_references") or model.get("input_references")
-        if refs:
+        description = str(model.get("description") or "").lower()
+        if "reference" in description or model.get("supported_input_references") or model.get("input_references"):
             score += 3
         scored.append((score, model))
     if not scored:
         return {
-            "id": preferred,
+            "id": "",
             "reason": "no_compatible_video_model",
             "metadata": {},
-            "error": "No OpenRouter video model in the current catalog matches requested duration/resolution/aspect ratio/first-frame constraints",
+            "error": "No OpenRouter video model in the current catalog matches duration/resolution/aspect ratio/first-frame constraints",
         }
     scored.sort(key=lambda item: item[0], reverse=True)
     best = scored[0][1]

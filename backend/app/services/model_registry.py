@@ -196,7 +196,7 @@ def choose_video_model(
         if not _supports_value(model, "supported_aspect_ratios", aspect_ratio):
             return False
         frames = model.get("supported_frame_images") or []
-        if require_first_frame and frames and "first_frame" not in frames:
+        if require_first_frame and "first_frame" not in frames:
             return False
         return True
 
@@ -227,7 +227,7 @@ def choose_video_model(
             "id": preferred,
             "reason": "no_compatible_video_model",
             "metadata": {},
-            "error": "No OpenRouter video model in the current catalog matches requested duration/resolution/aspect ratio/frame constraints",
+            "error": "No OpenRouter video model in the current catalog matches requested duration/resolution/aspect ratio/first-frame constraints",
         }
     scored.sort(key=lambda item: item[0], reverse=True)
     best = scored[0][1]

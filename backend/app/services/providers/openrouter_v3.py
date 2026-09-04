@@ -170,7 +170,10 @@ async def generate_image(
         "n": 1,
         "provider": {"allow_fallbacks": True, "data_collection": "deny"},
     }
-    refs = [file_to_data_url(path) for path in reference_paths]
+    refs = [
+        {"type": "image_url", "image_url": {"url": file_to_data_url(path)}}
+        for path in reference_paths
+    ]
     if refs:
         payload["input_references"] = refs
     async with httpx.AsyncClient(timeout=settings.openrouter_generation_timeout) as client:

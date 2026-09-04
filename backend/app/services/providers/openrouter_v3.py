@@ -227,7 +227,10 @@ async def submit_video(
     if frame_images:
         payload["frame_images"] = frame_images
     if input_reference_urls:
-        payload["input_references"] = input_reference_urls
+        payload["input_references"] = [
+            {"type": "image_url", "image_url": {"url": url}}
+            for url in input_reference_urls
+        ]
     async with httpx.AsyncClient(timeout=120) as client:
         response = await client.post(f"{BASE_URL}/videos", headers=_headers(), json=payload)
     return {"ok": response.is_success, "status_code": response.status_code, "data": _json_or_text(response)}

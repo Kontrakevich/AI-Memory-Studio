@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     # OpenRouter-first V3 stack: one key for vision, image and video generation.
     openrouter_api_key: str = ""
     openrouter_vision_model: str = "google/gemini-2.5-flash"
+    openrouter_video_qa_model: str = "openrouter/auto-beta"
     openrouter_image_model: str = "google/gemini-2.5-flash-image"
     openrouter_video_model: str = ""
     openrouter_generation_timeout: int = 900

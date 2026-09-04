@@ -1,19 +1,26 @@
 import json
 from pathlib import Path
+from typing import List
 
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from .services.generation_service import refresh_video_status, run_project_pipeline
-from .services.models import PersonMeta, ProjectCreate, TaskRequest
-from .services.project_service import create_project, get_project, list_projects
+from .services.memory_models import MemoryProjectMeta, PipelineStartRequest
+from .services.memory_pipeline import run_memory_pipeline
+from .services.memory_project import (
+    create_memory_project,
+    list_memory_projects,
+    load_state,
+    resolve_media,
+)
+from .services.model_registry import refresh_registry, registry_summary
 from .services.settings import settings
 from .services.storage import ensure_roots
 
 
-app = FastAPI(title=settings.app_title)
+app = FastAPI(title=settings.app_title, version="3.0")
 BASE_DIR = Path(__file__).resolve().parent
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
@@ -29,87 +36,145 @@ async def index(request: Request):
 async def health():
     return {
         "ok": True,
+        "version": "3.0",
         "app": settings.app_title,
-        "providers": {
-            "openrouter": bool(settings.openrouter_api_key),
-            "ark": bool(settings.ark_key),
-            "seedream_model": settings.seedream_model,
-            "seedance_model": settings.seedance_model,
+        "openrouter_configured": bool(settings.openrouter_api_key),
+        "public_base_url": settings.public_base_url or None,
+        "public_https_ready": bool(settings.public_base_url and settings.public_base_url.lower().startswith("https://")),
+        "defaults": {
+            "vision_model": settings.openrouter_vision_model,
+            "image_model": settings.openrouter_image_model,
+            "video_model": settings.openrouter_video_model or "auto-select",
+            "video_qa_model": settings.openrouter_video_qa_model,
+            "aspect_ratio": settings.memory_aspect_ratio,
+            "duration": settings.memory_video_duration,
+            "resolution": settings.memory_video_resolution,
         },
-        "video_presets": ["WALK_TO_YOUNGER_SELF", "CHILDHOOD_CONVERSATION", "MEET_YOUNGER_SELF"],
     }
+
+
+@app.get("/api/models")
+async def api_models():
+    try:
+        registry = await refresh_registry(force=False)
+        return {"ok": True, "summary": registry_summary(registry)}
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"OpenRouter model registry error: {exc}") from exc
+
+
+@app.post("/api/models/refresh")
+async def api_models_refresh():
+    try:
+        registry = await refresh_registry(force=True)
+        return {"ok": True, "summary": registry_summary(registry)}
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"OpenRouter model registry error: {exc}") from exc
 
 
 @app.get("/api/projects")
 async def api_list_projects():
-    return {"items": list_projects()}
+    return {"items": list_memory_projects()}
+
+
+@app.post("/api/projects")
+async def api_create_project(
+    meta_json: str = Form(...),
+    child_files: List[UploadFile] = File(...),
+    adult_files: List[UploadFile] = File(...),
+):
+    try:
+        meta = MemoryProjectMeta(**json.loads(meta_json))
+        state = create_memory_project(meta, child_files, adult_files)
+        return JSONResponse(state)
+    except (ValueError, json.JSONDecodeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/api/projects/{project_id}")
 async def api_get_project(project_id: str):
     try:
-        return get_project(project_id)
+        return load_state(project_id)
     except Exception as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
-@app.post("/api/projects")
-async def api_create_project(
-    project_name: str = Form(...),
-    person_json: str = Form(...),
-    child_file: UploadFile = File(...),
-    adult_file: UploadFile = File(...),
+@app.post("/api/projects/{project_id}/run")
+async def api_run_project(
+    project_id: str,
+    background_tasks: BackgroundTasks,
+    request: PipelineStartRequest | None = None,
 ):
-    person = PersonMeta(**json.loads(person_json))
-    payload = ProjectCreate(project_name=project_name, person=person)
-    state = create_project(payload, child_file, adult_file)
-    return JSONResponse(state)
-
-
-@app.post("/api/generate")
-async def api_generate(req: TaskRequest, background_tasks: BackgroundTasks):
     try:
-        state = get_project(req.project_id)
+        state = load_state(project_id)
     except Exception as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    provider = req.image_provider or settings.default_image_provider
-    state["status"] = "queued"
-    state["requested_pipeline"] = {
-        "decades": req.decades,
-        "image_provider": provider,
-        "video_provider": req.video_provider or settings.default_video_provider,
-        "video_preset": req.video_preset,
-        "render_cards": req.render_cards,
-        "create_video": req.create_video,
-    }
-    background_tasks.add_task(
-        run_project_pipeline,
-        req.project_id,
-        req.decades,
-        provider,
-        req.create_video,
-        req.render_cards,
-        req.video_preset,
-    )
+    req = request or PipelineStartRequest(project_id=project_id)
+    req.project_id = project_id
+    if state.get("status") == "processing" and not req.force_restart:
+        return {"ok": True, "project_id": project_id, "status": "processing", "message": "Pipeline is already running"}
+
+    background_tasks.add_task(run_memory_pipeline, req)
     return {
         "ok": True,
-        "project_id": req.project_id,
+        "project_id": project_id,
         "status": "queued",
-        "video_preset": req.video_preset,
-        "message": "Production pipeline queued in the local server process",
+        "message": "Full identity-to-video pipeline queued",
     }
 
 
-@app.get("/api/video/{project_id}/status")
-async def api_video_status(project_id: str):
+@app.get("/api/projects/{project_id}/status")
+async def api_project_status(project_id: str):
     try:
-        return await refresh_video_status(project_id)
+        state = load_state(project_id)
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return {
+        "id": state.get("id"),
+        "status": state.get("status"),
+        "current_stage": state.get("current_stage"),
+        "stages": state.get("stages", {}),
+        "model_selection": state.get("model_selection", {}),
+        "blocking_reason": state.get("blocking_reason"),
+        "assets": _public_asset_view(project_id, state.get("assets", {})),
+        "final": _public_asset_view(project_id, state.get("final", {})),
+        "recent_diagnostics": (state.get("diagnostics") or [])[-12:],
+    }
 
 
-@app.get("/api/diagnostics/{project_id}")
-async def api_diagnostics(project_id: str):
-    state = get_project(project_id)
+@app.get("/api/projects/{project_id}/diagnostics")
+async def api_project_diagnostics(project_id: str):
+    try:
+        state = load_state(project_id)
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
     return {"project_id": project_id, "diagnostics": state.get("diagnostics", [])}
+
+
+@app.get("/media/{project_id}/{relative_path:path}")
+async def media(project_id: str, relative_path: str):
+    try:
+        path = resolve_media(project_id, relative_path)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return FileResponse(path)
+
+
+def _public_asset_view(project_id: str, value):
+    """Convert project-local output paths into browser-safe media URLs without exposing server paths."""
+    if isinstance(value, dict):
+        return {k: _public_asset_view(project_id, v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_public_asset_view(project_id, v) for v in value]
+    if not isinstance(value, str):
+        return value
+
+    normalized = value.replace("\\", "/")
+    marker = f"/{project_id}/"
+    pos = normalized.rfind(marker)
+    if pos >= 0:
+        relative = normalized[pos + len(marker):]
+        return f"/media/{project_id}/{relative}"
+    return value

@@ -3,83 +3,172 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#080b10" />
   <title>{{ title }}</title>
   <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
-  <div class="page">
-    <header class="hero">
-      <div>
-        <div class="eyebrow">MARINS · 1 SEPTEMBER</div>
-        <h1>{{ title }}</h1>
-        <p>Две фотографии → identity passport → эпохи 1970–2020 → единая верстка → meeting anchor → видео «встреча с собой».</p>
-      </div>
-      <div class="header-actions">
-        <button class="secondary" onclick="loadHealth()">API статус</button>
-        <button class="secondary" onclick="loadProjects()">Обновить</button>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="AI Memory Studio">
+        <span class="brand-mark"></span>
+        <span>AI MEMORY STUDIO</span>
+      </a>
+      <div class="topbar-actions">
+        <button class="ghost small" type="button" onclick="refreshModels()">Обновить модели</button>
+        <button class="ghost small" type="button" onclick="loadProjects()">Мои фильмы</button>
       </div>
     </header>
 
-    <section class="card compact">
-      <div id="health" class="health-row">Проверка API...</div>
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">ВСТРЕЧА, КОТОРОЙ НЕ МОГЛО БЫТЬ</div>
+        <h1>Встретьтесь<br>с собой из детства.</h1>
+        <p class="lead">Загрузите несколько фотографий из детства и настоящего. Система восстановит две версии одной личности, проверит их идентичность и создаст короткий фильм о встрече.</p>
+        <div id="system-status" class="system-status">Проверяем готовность системы…</div>
+      </div>
+      <div class="hero-orbit" aria-hidden="true">
+        <div class="orbit orbit-a"></div>
+        <div class="orbit orbit-b"></div>
+        <div class="memory-dot dot-a"></div>
+        <div class="memory-dot dot-b"></div>
+        <div class="meeting-line"></div>
+      </div>
     </section>
 
-    <section class="grid two">
-      <div class="card">
-        <h2>Новый человек</h2>
+    <section class="workspace-grid">
+      <section class="panel creation-panel">
+        <div class="panel-kicker">01 · ИСХОДНИКИ</div>
+        <h2>Создать воспоминание</h2>
+        <p class="muted">Достаточно одного хорошего фото каждого периода. Второе фото повышает точность геометрии и профиля.</p>
+
         <form id="project-form">
-          <label>Название проекта<input name="project_name" value="1 сентября 2026" required /></label>
-          <div class="grid two tight">
-            <label>Фамилия<input name="surname" required /></label>
-            <label>Имя<input name="name" required /></label>
+          <label class="field">
+            <span>Название фильма</span>
+            <input name="title" value="Встреча с собой" maxlength="90" required />
+          </label>
+
+          <label class="field">
+            <span>Имя <em>необязательно</em></span>
+            <input name="person_name" placeholder="Например, Михаил" maxlength="80" />
+          </label>
+
+          <div class="upload-grid">
+            <label class="upload-zone" id="child-zone">
+              <input id="child-files" type="file" name="child_files" accept="image/*" multiple required />
+              <span class="upload-number">A</span>
+              <strong>Я в детстве</strong>
+              <small>1–2 фотографии</small>
+              <span class="upload-state" id="child-file-state">Выбрать фото</span>
+            </label>
+
+            <label class="upload-zone" id="adult-zone">
+              <input id="adult-files" type="file" name="adult_files" accept="image/*" multiple required />
+              <span class="upload-number">B</span>
+              <strong>Я сейчас</strong>
+              <small>1–2 фотографии</small>
+              <span class="upload-state" id="adult-file-state">Выбрать фото</span>
+            </label>
           </div>
-          <label>Должность<input name="position" required /></label>
-          <label>Годы обучения<input name="school_years" placeholder="1993–2003" required /></label>
-          <label>Дополнительное описание<textarea name="notes" rows="3" placeholder="Особенности образа, пожелания по эпохе"></textarea></label>
-          <label>Школьное фото<input type="file" name="child_file" accept="image/*" required /></label>
-          <label>Актуальное фото<input type="file" name="adult_file" accept="image/*" required /></label>
-          <button type="submit">Создать проект</button>
+
+          <label class="field">
+            <span>Короткое воспоминание <em>необязательно</em></span>
+            <textarea name="memory_note" rows="3" maxlength="500" placeholder="Например: первый класс, солнечный сентябрь, старая школа…"></textarea>
+          </label>
+
+          <details class="advanced">
+            <summary>Настройки фильма</summary>
+            <div class="advanced-grid">
+              <label class="field">
+                <span>Сцена</span>
+                <select name="scene_preset">
+                  <option value="SCHOOL_CLASSROOM" selected>Школьный класс</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Формат</span>
+                <select name="aspect_ratio">
+                  <option value="9:16" selected>9:16 · вертикальный</option>
+                  <option value="16:9">16:9 · горизонтальный</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Длительность</span>
+                <select name="duration">
+                  <option value="5">5 секунд</option>
+                  <option value="8" selected>8 секунд</option>
+                  <option value="10">10 секунд</option>
+                </select>
+              </label>
+              <label class="check-field">
+                <input type="checkbox" name="generate_audio" />
+                <span>Генерировать звук, если модель поддерживает</span>
+              </label>
+            </div>
+          </details>
+
+          <button class="primary" type="submit">Создать проект</button>
+          <div id="create-status" class="inline-status"></div>
         </form>
-        <div id="create-status" class="status"></div>
-      </div>
+      </section>
 
-      <div class="card">
-        <h2>Проекты</h2>
-        <p class="hint">Нажми на проект, чтобы выбрать его для генерации.</p>
-        <div id="projects" class="project-list"></div>
-      </div>
+      <aside class="panel projects-panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-kicker">ПРОЕКТЫ</div>
+            <h2>Последние фильмы</h2>
+          </div>
+          <button class="icon-button" type="button" onclick="loadProjects()" aria-label="Обновить">↻</button>
+        </div>
+        <div id="projects" class="project-list">
+          <div class="empty-state">Проектов пока нет.</div>
+        </div>
+      </aside>
     </section>
 
-    <section class="card">
-      <h2>Production pipeline</h2>
-      <div class="grid two">
-        <label>ID проекта<input id="gen-project-id" placeholder="Выбери проект справа" /></label>
-        <label>Генератор master-фото
-          <select id="image-provider">
-            <option value="seedream" selected>Seedream / Ark — production path</option>
-            <option value="nano_banana">Nano Banana / OpenRouter — identity-first</option>
-          </select>
-        </label>
-        <label>Видео-сценарий
-          <select id="video-preset">
-            <option value="WALK_TO_YOUNGER_SELF" selected>Walk to Younger Self — основной</option>
-            <option value="CHILDHOOD_CONVERSATION">Childhood Conversation — спокойный</option>
-            <option value="MEET_YOUNGER_SELF">Meet Younger Self — короткий reveal</option>
-          </select>
-        </label>
-        <label>Десятилетия
-          <input id="decades" value="1970s,1980s,1990s,2000s,2010s,2020s" />
-        </label>
+    <section id="production" class="panel production-panel hidden">
+      <div class="production-head">
+        <div>
+          <div class="panel-kicker">02 · ПРОИЗВОДСТВО</div>
+          <h2 id="selected-title">Проект</h2>
+          <div id="selected-id" class="project-code"></div>
+        </div>
+        <div class="production-actions">
+          <button id="run-button" class="primary compact" type="button" onclick="runSelectedProject()">Создать фильм</button>
+          <button class="ghost compact" type="button" onclick="refreshSelectedProject()">Обновить</button>
+        </div>
       </div>
-      <p class="hint">Основной preset: ребёнок уже находится в школьной сцене → взрослая версия входит и подходит → узнавание → финальный эмоциональный hold.</p>
-      <div class="actions-row">
-        <button onclick="startGeneration()">Запустить фото + видео</button>
-        <button class="secondary" onclick="refreshSelectedProject()">Статус проекта</button>
-        <button class="secondary" onclick="refreshVideoStatus()">Проверить видео / MP4</button>
+
+      <div id="pipeline" class="pipeline"></div>
+      <div id="blocking-message" class="blocking-message hidden"></div>
+
+      <div id="artifacts" class="artifacts hidden">
+        <div class="artifact-section">
+          <h3>Карточки персонажа</h3>
+          <div id="cards-preview" class="media-grid cards-grid"></div>
+        </div>
+        <div class="artifact-section">
+          <h3>Ключевые кадры</h3>
+          <div id="anchors-preview" class="media-grid anchors-grid"></div>
+        </div>
       </div>
-      <pre id="generation-output">Готов к запуску.</pre>
+
+      <section id="final-film" class="final-film hidden">
+        <div class="final-copy">
+          <div class="panel-kicker">03 · ГОТОВО</div>
+          <h2>Встреча состоялась.</h2>
+          <p>Фильм прошёл автоматическую проверку идентичности, камеры и сцены.</p>
+        </div>
+        <div id="video-container" class="video-frame"></div>
+      </section>
+
+      <details class="diagnostics-drawer">
+        <summary>Техническая диагностика</summary>
+        <pre id="diagnostics-output">Нет данных.</pre>
+      </details>
     </section>
-  </div>
+  </main>
+
   <script src="/static/app.js"></script>
 </body>
 </html>
